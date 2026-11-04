@@ -27,7 +27,19 @@ function exCheck(ex,hc,grp=false){
   return w;
 }
 function teamInfo(ex,hc){const t=num(ex&&ex.teams);if(t<2||!hc.F)return "";const a=Math.floor(hc.F/t),r=hc.F%t;return r?`${t} Teams: ${r}× ${a+1}, ${t-r}× ${a}`:`${t} Teams à ${a}`;}
-function stepsOf(t){return (t.ablauf||[]).map(s=>({s,ex:S.uebungen[s.uebungId]}));}
+/* Trainingsschritt = Kopie von Name, Kategorie, Haupt- und Nebenschwerpunkten der Übung zum Zeitpunkt des
+   Einplanens. Diese Kopie gilt im Training und in der Auswertung; Material, Skizze, Spielerzahl und Texte
+   kommen weiter aus der Bibliothek. „live“ = gerade aus dem Training neu angelegt, Kopie folgt beim Zurückkehren. */
+function snapshot(ex){return {name:(ex.name||"").trim(),kategorie:ex.kategorie||"",haupt:ex.haupt||"",neben:(ex.tags||[]).slice()};}
+function stepEx(s){
+  const lib=S.uebungen[s.uebungId];if(!lib&&s.name==null)return null;
+  const e=Object.assign({},lib||{});
+  if(s.name!=null&&!s.live){e.name=s.name;e.kategorie=s.kategorie||"";e.haupt=s.haupt||"";e.tags=(s.neben||[]).slice();}
+  e.inBib=!!lib;return e;
+}
+function stepsOf(t){return (t.ablauf||[]).map(s=>({s,ex:stepEx(s)}));}
+/* Weicht die Kopie im Schritt von der Bibliothek ab? (für den Hinweis „aus Bibliothek aktualisieren“) */
+function stepDiffers(s){const lib=S.uebungen[s.uebungId];if(!lib||s.name==null||s.live)return false;return JSON.stringify(snapshot(lib))!==JSON.stringify({name:s.name,kategorie:s.kategorie||"",haupt:s.haupt||"",neben:s.neben||[]});}
 function stepDur(st){return st.s.dauer!=null&&st.s.dauer!==""?num(st.s.dauer):num(st.ex&&st.ex.dauer);}
 
 /* ---------- Ablauf in Einheiten: einzelne Übung oder paralleler Block ----------
@@ -98,7 +110,19 @@ function openPoints(t){
   const sp=t.spielId&&S.spiele[t.spielId];if(!sp)return [];
   return (sp.punkte||[]).filter(p=>p.trainieren);
 }
-function coveredBy(t,tag){if(!tag)return [];return stepsOf(t).filter(({ex})=>ex&&(ex.tags||[]).includes(tag)).map(({ex})=>ex.name);}
+function coveredBy(t,tag){if(!tag)return [];return stepsOf(t).filter(({ex})=>ex&&((ex.tags||[]).includes(tag)||ex.haupt===tag)).map(({ex})=>ex.name);}
+/* ---------- Planung und Durchführung (1c) ----------
+   Minuten eines Schritts pro Spielerin bzw. Gruppe. "plan": geplante Dauer. "ist": nur wenn das Training
+   durchgeführt ist und der Schritt nicht ausgefallen ist; tatsächliche Dauer, sonst die geplante.
+   Bei Stationen verbringt jede Gruppe im Schnitt Blockdauer / Anzahl Stationen an einer Station. */
+function stepMin(t,u,st,mode){
+  if(mode==="ist"&&(!t.durchgefuehrt||st.s.ausgefallen))return 0;
+  if(!u.block)return mode==="ist"&&isSet(st.s.istDauer)?num(st.s.istDauer):u.dur;
+  const c=blockCfg(t,u);const dauer=mode==="ist"&&isSet(c.istDauer)?num(c.istDauer):u.dur;
+  return dauer/u.steps.length;
+}
+/* Tatsächliche Gesamtdauer eines Trainings (ohne ausgefallene Schritte). */
+function trainingMin(t,mode){return Math.round(unitsOf(t).reduce((a,u)=>a+u.steps.reduce((b,st)=>b+stepMin(t,u,st,mode),0),0));}
 function openTags(t){return [...new Set(openPoints(t).filter(p=>!p.erledigt&&p.tag&&!coveredBy(t,p.tag).length).map(p=>p.tag))];}
 const ofTeam=c=>Object.entries(S[c]).filter(([,o])=>o.team===S.team);
 const sortedTrainings=()=>ofTeam("trainings").sort((a,b)=>(b[1].datum||"").localeCompare(a[1].datum||""));

@@ -6,6 +6,9 @@ const DEFAULT_TAGS=["Zweikampf","Stellungsspiel","Umschalten","Abschluss","Anspi
 const DEF_KAT=["Besprechung","Aufwärmen","Athletik","Technik","Torschuss","Taktik","Spielform","Abschlussspiel","Cool-down"];
 const DEF_GRUENDE=["Krankheit","Muskelverletzung","Gelenkverletzung","Arbeit","Schule/Studium","Urlaub","Sonstiges"];
 const DEF_POS=["Tor","Abwehr","Mittelfeld","Sturm"];
+/* Hauptschwerpunkte (genau einer je Übung). Nebenschwerpunkte sind die Liste settings.tags. */
+const DEF_SCHWERPUNKTE=["Technik","Taktik","Athletik","Koordination","Torwart"];
+const HAUPT_AUS_KAT=["Technik","Taktik","Athletik"]; // Kategorien, die bei der Umstellung eindeutig ein Schwerpunkt sind
 const matList=()=>(S.settings.material||[]).map(m=>[m.k,m.l]);
 const matLabel=k=>{const m=(S.settings.material||[]).find(x=>x.k===k);return m?m.l:k;};
 const katList=()=>S.settings.kategorien||[];
@@ -22,7 +25,7 @@ const ARTN={plus:"Positiv",minus:"Negativ",info:"Hinweis"};
 /* ---------- state ---------- */
 const S={view:"training",ready:false,mode:"none",meta:{},persistent:false,team:null,teamsDoc:{list:[]},kaders:{},settings:null,uebungen:{},trainings:{},spiele:{},
   sel:{training:null,uebung:null,spiel:null},ui:{open:{},q:"",tag:"",pickQ:"",pickTag:"",backTo:null},notice:""};
-function defaultSettings(){return {tags:DEFAULT_TAGS.slice(),kategorien:DEF_KAT.slice(),gruende:DEF_GRUENDE.slice(),positionen:DEF_POS.slice(),
+function defaultSettings(){return {tags:DEFAULT_TAGS.slice(),schwerpunkte:DEF_SCHWERPUNKTE.slice(),kategorien:DEF_KAT.slice(),gruende:DEF_GRUENDE.slice(),positionen:DEF_POS.slice(),
   material:DEF_MAT.map(([k,l])=>({k,l})),inventar:{leibchen:3},leibchenProSatz:9,start:"19:00",dauer:90};}
 S.settings=defaultSettings();
 /* S.kader ist immer der Kader der gewählten Mannschaft. */
@@ -43,4 +46,10 @@ function nextTrainingDay(){const d=new Date();for(let i=0;i<8;i++){const x=new D
 function addMin(t,m){const [h,mi]=(t||"19:00").split(":").map(Number);const x=h*60+mi+m;return `${String(Math.floor(x/60)%24).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`;}
 function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600);}
 function setStatus(s){$("#status").textContent=s;}
+/* Texteingaben: beim Verlassen des Feldes Leerzeichen am Anfang/Ende entfernen und so speichern
+   (läuft vor allen anderen Änderungs-Handlern; Zahlen-, Datums- und Suchfelder bleiben unberührt). */
+document.addEventListener("change",e=>{const el=e.target;
+  const txt=el.tagName==="TEXTAREA"||(el.tagName==="INPUT"&&["text","email",""].includes(el.getAttribute("type")||""));
+  if(!txt||el.type==="search")return;const v=el.value.trim();if(v===el.value)return;
+  el.value=v;el.dispatchEvent(new Event("input",{bubbles:true}));},true);
 

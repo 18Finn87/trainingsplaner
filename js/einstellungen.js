@@ -2,17 +2,26 @@
 /* ---------- Einstellungen: Auswahllisten, Material, Standards, Datensicherung ----------
    Jede Liste weiß, wo ihre Einträge verwendet werden – so werden Umbenennungen überall
    mitgezogen und beim Löschen wird nachgefragt, wenn ein Eintrag noch in Gebrauch ist. */
+/* Kopien in Trainingsschritten mitziehen (Feld f = "neben" | "kategorie" | "haupt"). */
+function applySteps(f,v,neu){Object.entries(S.trainings).forEach(([id,t])=>{let ch=false;(t.ablauf||[]).forEach(s=>{
+  if(f==="neben"){if((s.neben||[]).includes(v)){s.neben=neu?[...new Set(s.neben.map(x=>x===v?neu:x))]:s.neben.filter(x=>x!==v);ch=true;}}
+  else if(s[f]===v){s[f]=neu||"";ch=true;}});if(ch)saveLater("training",id);});}
+const stepUses=(f,v)=>Object.values(S.trainings).reduce((a,t)=>a+(t.ablauf||[]).filter(s=>f==="neben"?(s.neben||[]).includes(v):s[f]===v).length,0);
 const LISTEN={
-  tags:{titel:"Trainingsinhalte",hint:"Verbinden Übungen mit Kritikpunkten aus dem Spiel und zählen in der Statistik.",
+  schwerpunkte:{titel:"Hauptschwerpunkte",hint:"Jede Übung hat genau einen Hauptschwerpunkt. Nur er zählt in der Statistik als Trainingszeit.",
+    get:()=>S.settings.schwerpunkte=S.settings.schwerpunkte||[],
+    uses:v=>{const u=Object.values(S.uebungen).filter(e=>e.haupt===v).length,s=stepUses("haupt",v);return {n:u+s,txt:[u&&`${u} Übung${u>1?"en":""}`,s&&`${s} Trainingsschritt${s>1?"en":""}`].filter(Boolean).join(" und ")};},
+    apply:(v,neu)=>{Object.entries(S.uebungen).forEach(([id,e])=>{if(e.haupt===v){e.haupt=neu||"";saveLater("uebung",id);}});applySteps("haupt",v,neu);}},
+  tags:{titel:"Nebenschwerpunkte (Trainingsinhalte)",hint:"Beliebig viele je Übung. Verbinden Übungen mit Kritikpunkten aus dem Spiel und erscheinen in der Statistik als Zusatzinhalte.",
     get:()=>S.settings.tags,
     uses:v=>{const u=Object.entries(S.uebungen).filter(([,e])=>(e.tags||[]).includes(v));const p=[];Object.entries(S.spiele).forEach(([id,s])=>(s.punkte||[]).forEach(x=>{if(x.tag===v)p.push(id);}));
       return {n:u.length+p.length,txt:[u.length&&`${u.length} Übung${u.length>1?"en":""}`,p.length&&`${p.length} Beobachtung${p.length>1?"en":""}`].filter(Boolean).join(" und ")};},
     apply:(v,neu)=>{Object.entries(S.uebungen).forEach(([id,e])=>{if((e.tags||[]).includes(v)){e.tags=neu?[...new Set(e.tags.map(x=>x===v?neu:x))]:e.tags.filter(x=>x!==v);saveLater("uebung",id);}});
-      Object.entries(S.spiele).forEach(([id,s])=>{let ch=false;(s.punkte||[]).forEach(x=>{if(x.tag===v){x.tag=neu||"";ch=true;}});if(ch)saveLater("spiel",id);});}},
+      Object.entries(S.spiele).forEach(([id,s])=>{let ch=false;(s.punkte||[]).forEach(x=>{if(x.tag===v){x.tag=neu||"";ch=true;}});if(ch)saveLater("spiel",id);});applySteps("neben",v,neu);}},
   kategorien:{titel:"Übungskategorien",hint:"Gruppieren die Übungssammlung und färben die Zeitleiste im Training.",
     get:()=>S.settings.kategorien,
     uses:v=>{const n=Object.values(S.uebungen).filter(e=>e.kategorie===v).length;return {n,txt:`${n} Übung${n>1?"en":""}`};},
-    apply:(v,neu)=>Object.entries(S.uebungen).forEach(([id,e])=>{if(e.kategorie===v){e.kategorie=neu||"";saveLater("uebung",id);}})},
+    apply:(v,neu)=>{Object.entries(S.uebungen).forEach(([id,e])=>{if(e.kategorie===v){e.kategorie=neu||"";saveLater("uebung",id);}});applySteps("kategorie",v,neu);}},
   gruende:{titel:"Gründe für Fehlen und Einschränkung",hint:"Zur Auswahl, wenn eine Spielerin fehlt oder eingeschränkt ist.",
     get:()=>S.settings.gruende,
     uses:v=>{let n=players().filter(p=>p.einschr&&p.einschr.grund===v).length;
@@ -50,7 +59,7 @@ function vEinstellungen(){
       <span class="ctl">${t.id!==S.team?`<button class="btn sm" data-act="tmPick" data-id="${esc(t.id)}">Wählen</button>`:""}<button class="iconbtn" data-act="tmDel" data-id="${esc(t.id)}" aria-label="${esc(t.name)} löschen"${S.teamsDoc.list.length<2?" disabled":""}>✕</button></span></div>`;}).join("")}</div>
     <div class="addpt"><input class="inp" data-key="tmnew" data-act="tmNew" placeholder="Neue Mannschaft, z. B. Damen 2"><button class="btn" data-act="tmAdd">Anlegen</button></div>
     <p class="legend">Beginn und Dauer sind die Vorgaben für neue Trainings dieser Mannschaft.</p></section>
-  ${listBlock("tags")}${listBlock("kategorien")}
+  ${listBlock("schwerpunkte")}${listBlock("tags")}${listBlock("kategorien")}
   <section class="blk"><h3>Material und Bestand <span class="sub">${mat.length} Sorten</span></h3><p class="hint">Bezeichnung ändern, Bestand eintragen (leer = wird nicht geprüft), sortieren.</p>
     <details class="fold" data-dkey="set-material"${S.ui.open.dsetmaterial?" open":""}><summary>Material und Bestand bearbeiten</summary>
     <div class="lsed">${mat.map((m,i)=>`<div class="lsrow mat"><input class="inp" data-key="mt-${m.k}" data-act="mtRename" data-i="${i}" value="${esc(m.l)}" aria-label="Material: ${esc(m.l)}">

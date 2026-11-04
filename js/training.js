@@ -4,7 +4,11 @@
 function trainingText(t){const sp=t.spielId&&S.spiele[t.spielId];
   return [fmtDate(t.datum),t.datum,t.thema,t.notizen,sp&&sp.gegner,...stepsOf(t).map(st=>st.ex?[st.ex.name,st.ex.kategorie].join(" "):""),...(t.ablauf||[]).map(s=>s.notiz)].join(" ").toLowerCase();}
 const trainingTags=t=>new Set(stepsOf(t).flatMap(st=>st.ex?st.ex.tags||[]:[]));
+/* Aus dem Training neu angelegte Übungen: beim Zurückkehren die Kopie in den Schritt übernehmen. */
+function finishLive(){Object.entries(S.trainings).forEach(([id,t])=>{let ch=false;(t.ablauf||[]).forEach(s=>{const e=s.live&&S.uebungen[s.uebungId];
+  if(e&&(e.name||"").trim()){Object.assign(s,snapshot(e));delete s.live;ch=true;}});if(ch)saveLater("training",id);});}
 function vTraining(){
+  finishLive();
   const all=sortedTrainings();const cur=S.sel.training&&S.trainings[S.sel.training]?S.sel.training:null;
   const q=(S.ui.tq||"").toLowerCase().trim(),von=S.ui.tvon||"",bis=S.ui.tbis||"",tag=S.ui.ttag||"";
   const list=all.filter(([,t])=>(!q||q.split(/\s+/).every(w=>trainingText(t).includes(w)))&&(!von||(t.datum||"")>=von)&&(!bis||(t.datum||"")<=bis)&&(!tag||trainingTags(t).has(tag)));
@@ -41,17 +45,30 @@ function trainingEditor(id){
   const nU=units.length;
   const moveCtl=ui=>`<button class="iconbtn" data-act="unitUp" data-u="${ui}" aria-label="Nach oben"${ui?"":" disabled"}>↑</button><button class="iconbtn" data-act="unitDown" data-u="${ui}" aria-label="Nach unten"${ui<nU-1?"":" disabled"}>↓</button>`;
   const parBtn=(st,ui)=>ui>0?`<button class="btn sm par" data-act="stepPar" data-i="${st.i}" title="Läuft gleichzeitig mit der Übung darüber; die Gruppen wechseln nach jeder Runde">∥ parallel zur vorherigen</button>`:"";
+  const durch=!!t.durchgefuehrt;
+  /* Schritt-Kopie bearbeiten (Name, Kategorie, Haupt-/Nebenschwerpunkte) – ändert nur dieses Training. */
+  const stepEdit=st=>{const s=st.s,i=st.i;const katOpts=[["","–"],...katList().map(k=>[k,k]),...(s.kategorie&&!katList().includes(s.kategorie)?[[s.kategorie,s.kategorie]]:[])];
+    const hOpts=[["","– noch keiner –"],...(S.settings.schwerpunkte||[]).map(k=>[k,k]),...(s.haupt&&!(S.settings.schwerpunkte||[]).includes(s.haupt)?[[s.haupt,s.haupt]]:[])];
+    return `<div class="sedit"><p class="legend" style="margin:0 0 8px">Nur für dieses Training – die Übung in der Bibliothek bleibt unverändert.</p>
+      <div class="meta" style="margin:0"><label class="f">Name<input data-key="sf-n-${s.uid}" data-act="stepF" data-f="name" data-i="${i}" value="${esc(s.name||"")}"></label>
+      <label class="f">Kategorie<select data-key="sf-k-${s.uid}" data-act="stepF" data-f="kategorie" data-i="${i}">${opt(katOpts,s.kategorie||"")}</select></label>
+      <label class="f">Hauptschwerpunkt<select data-key="sf-h-${s.uid}" data-act="stepF" data-f="haupt" data-i="${i}">${opt(hOpts,s.haupt||"")}</select></label></div>
+      <p class="legend" style="margin:10px 0 6px">Nebenschwerpunkte</p><div class="chips">${S.settings.tags.map(x=>`<button type="button" class="chip tag" data-act="stepNeben" data-i="${i}" data-v="${esc(x)}" aria-pressed="${(s.neben||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
+      <div class="row-actions">${st.ex.inBib?`<button class="btn sm" data-act="stepRefresh" data-i="${i}"${stepDiffers(s)?"":" disabled"}>Aus Bibliothek aktualisieren</button><button class="btn sm" data-act="editEx" data-id="${s.uebungId}">Übung in der Bibliothek bearbeiten</button>`:'<span class="legend">Diese Übung gibt es in der Bibliothek nicht mehr – die Angaben hier bleiben erhalten.</span>'}</div></div>`;};
   const exBody=(st,w,ti,pfx)=>{const ex=st.ex;const open=S.ui.open[st.s.uid];
     return `<button class="name" data-act="stepOpen" data-u="${st.s.uid}" aria-expanded="${!!open}">${esc(exName(ex))}</button>
-      <div class="tags"><span>${esc(ex.kategorie||"")}</span>${(ex.tags||[]).map(x=>`<span>#${esc(x)}</span>`).join("")}${ti.map(x=>`<span>${esc(x)}</span>`).join("")}</div>
+      <div class="tags"><span>${esc(ex.kategorie||"")}</span>${ex.haupt?`<span class="haupt">${esc(ex.haupt)}</span>`:""}${(ex.tags||[]).map(x=>`<span>#${esc(x)}</span>`).join("")}${ti.map(x=>`<span>${esc(x)}</span>`).join("")}${stepDiffers(st.s)?'<span class="diff" title="Weicht von der Bibliothek ab">angepasst</span>':""}${!ex.inBib?'<span class="diff">nicht mehr in der Bibliothek</span>':""}</div>
       ${w.map(x=>`<div class="warn">${esc(x)}</div>`).join("")}
       <input class="inp" style="margin-top:6px;width:100%" data-key="sn-${st.s.uid}" data-act="stepNote" data-i="${st.i}" placeholder="Notiz für heute, z. B. Gruppen" value="${esc(st.s.notiz||"")}">
-      ${open?`<div class="detail"><div>${ex.ziel?`<p><b>Ziel:</b> ${esc(ex.ziel)}</p>`:""}${ex.organisation?`<p><b>Organisation:</b> ${esc(ex.organisation)}</p>`:""}${ex.coaching?`<p><b>Coaching:</b> ${esc(ex.coaching)}</p>`:""}<button class="btn sm" data-act="editEx" data-id="${st.s.uebungId}">Übung bearbeiten</button></div><div>${(ex.board&&(ex.board.items||[]).length)?boardSVG(ex.board,pfx+st.i):""}</div></div>`:""}`;};
+      ${open?`${stepEdit(st)}<div class="detail"><div>${ex.ziel?`<p><b>Ziel:</b> ${esc(ex.ziel)}</p>`:""}${ex.organisation?`<p><b>Organisation:</b> ${esc(ex.organisation)}</p>`:""}${ex.coaching?`<p><b>Coaching:</b> ${esc(ex.coaching)}</p>`:""}</div><div>${(ex.board&&(ex.board.items||[]).length)?boardSVG(ex.board,pfx+st.i):""}</div></div>`:""}`;};
+  /* Durchführung je Schritt: ausgefallen + tatsächliche Dauer (nur wenn das Training durchgeführt ist). */
+  const istCtl=(st,u)=>durch?`<div class="istrow">${u&&!u.block?`<label class="lsinv">Tatsächlich <input class="inp" type="number" min="0" data-key="si-${st.s.uid}" data-act="stepIst" data-i="${st.i}" value="${esc(isSet(st.s.istDauer)?st.s.istDauer:"")}" placeholder="${u.dur}"> min</label>`:""}
+      <button type="button" class="chip tag aus" data-act="stepAus" data-i="${st.i}" aria-pressed="${!!st.s.ausgefallen}">${st.s.ausgefallen?"Ausgefallen":"Ausgefallen?"}</button></div>`:"";
   const rows=units.map((u,ui)=>{
     if(!u.block){const st=u.steps[0],ex=st.ex,i=st.i;
       if(!ex)return `<div class="step"><div class="clock">${u.start}</div><div><b>Gelöschte Übung</b></div><div class="ctl"><button class="iconbtn" data-act="stepDel" data-i="${i}" aria-label="Entfernen">✕</button></div></div>`;
       const ti=teamInfo(ex,hc);
-      return `<div class="step"><div class="clock">${u.start}</div><div>${exBody(st,exCheck(ex,hc),ti?[ti]:[],"d")}${parBtn(st,ui)?`<div class="row-actions" style="margin-top:8px">${parBtn(st,ui)}</div>`:""}
+      return `<div class="step${st.s.ausgefallen&&durch?" aus":""}"><div class="clock">${u.start}</div><div>${exBody(st,exCheck(ex,hc),ti?[ti]:[],"d")}${istCtl(st,u)}${parBtn(st,ui)&&!durch?`<div class="row-actions" style="margin-top:8px">${parBtn(st,ui)}</div>`:""}
       </div><div class="ctl"><input class="inp" type="number" min="0" data-key="sd-${st.s.uid}" data-act="stepDur" data-i="${i}" value="${u.dur}" aria-label="Minuten"><span class="hint" style="margin:0">min</span>
         ${moveCtl(ui)}<button class="iconbtn" data-act="stepDel" data-i="${i}" aria-label="Entfernen">✕</button></div></div>`;}
     // paralleler Block
@@ -65,11 +82,12 @@ function trainingEditor(id){
     return `<div class="pblock"><div class="step pb-head"><div class="clock">${u.start}</div><div>
         <b class="pb-title">Parallel · ${n} Stationen</b><div class="hint" style="margin:2px 0 8px">${R} Runde${R>1?"n":""} à ${unitRound(t,u)} min, bis ${addMin(u.start,u.dur)} · ${R>1?"die Gruppen wechseln nach jeder Runde":"jede Gruppe bleibt an ihrer Station"}</div>
         <div class="pb-set"><label class="f">Runde (min)<input type="number" min="1" data-key="br-${u.block}" data-act="blkRound" data-b="${u.block}" value="${unitRound(t,u)}"></label>
-          <label class="f">Runden<input type="number" min="1" data-key="bn-${u.block}" data-act="blkRounds" data-b="${u.block}" value="${R}"></label></div>
+          <label class="f">Runden<input type="number" min="1" data-key="bn-${u.block}" data-act="blkRounds" data-b="${u.block}" value="${R}"></label>
+          ${durch?`<label class="f">Tatsächlich (min)<input type="number" min="0" data-key="bi-${u.block}" data-act="blkIst" data-b="${u.block}" value="${esc(isSet(c.istDauer)?c.istDauer:"")}" placeholder="${u.dur}"></label>`:""}</div>
         ${grp}${sumW?`<div class="warn">${esc(sumW)}</div>`:""}
       </div><div class="ctl">${moveCtl(ui)}</div></div>
-      <div class="stations" style="--n:${n}">${u.steps.map((st,s)=>`<div class="station"><div class="st-lab">Station ${s+1}<span>Gruppe${info[s].gruppen.length>1?"n":""} ${info[s].gruppen.join(", ")}</span></div>
-        ${st.ex?exBody(st,info[s].warns,info[s].teams,"p"):"<b>Gelöschte Übung</b>"}
+      <div class="stations" style="--n:${n}">${u.steps.map((st,s)=>`<div class="station${st.s.ausgefallen&&durch?" aus":""}"><div class="st-lab">Station ${s+1}<span>Gruppe${info[s].gruppen.length>1?"n":""} ${info[s].gruppen.join(", ")}</span></div>
+        ${st.ex?exBody(st,info[s].warns,info[s].teams,"p"):"<b>Gelöschte Übung</b>"}${istCtl(st,null)}
         <div class="row-actions" style="margin-top:8px"><button class="btn sm" data-act="stepSolo" data-i="${st.i}">Lösen</button><button class="iconbtn" data-act="stepDel" data-i="${st.i}" aria-label="Entfernen">✕</button></div></div>`).join("")}</div></div>`;}).join("");
   // material
   const need=materialNeed(t);const inv=S.settings.inventar||{};
@@ -99,6 +117,11 @@ function trainingEditor(id){
    ${rows||'<p class="hint">Noch keine Übungen. Füge die erste aus deiner Sammlung hinzu.</p>'}
    <div class="row-actions"><button class="btn pri" data-act="pick">Übung hinzufügen</button></div></section>
 
+  <section class="blk"><h3>Durchführung <span class="sub">${durch?`durchgeführt · tatsächlich ${trainingMin(t,"ist")} von ${total} min geplant`:"noch nicht als durchgeführt markiert"}</span></h3>
+   <p class="hint">${durch?"Bei jedem Schritt kannst du jetzt „Ausgefallen“ setzen und die tatsächliche Dauer eintragen (leer = wie geplant). Die Statistik zählt nur, was tatsächlich stattgefunden hat.":"Nach dem Training markieren – erst dann zählt es in der Statistik."}</p>
+   <div class="row-actions" style="margin-top:0"><button class="btn${durch?"":" pri"}" data-act="durchToggle">${durch?"Doch nicht durchgeführt":"Training als durchgeführt markieren"}</button></div>
+   <label class="f" style="margin-top:14px">Abweichungen zur Planung<textarea class="inp" rows="3" data-key="t-abw" data-bind="abweichung" placeholder="z. B. Abschlussspiel wegen Regen gestrichen, Stationen getauscht">${esc(t.abweichung||"")}</textarea></label></section>
+
   <section class="blk"><h3>Material</h3>${mrows?`<p class="hint">Höchster gleichzeitiger Bedarf: die größte Einzelübung oder der größte parallele Block (dort zählen die Stationen zusammen), verglichen mit deinem Bestand.</p><div class="tablewrap"><table class="mt"><thead><tr><th>Material</th><th class="n">Bedarf</th><th class="n">Bestand</th><th></th></tr></thead><tbody>${mrows}</tbody></table></div>`:'<p class="hint">Die Übungen im Plan haben noch kein Material eingetragen.</p>'}</section>
 
   <section class="blk"><h3>Notizen</h3><textarea class="inp" style="width:100%" rows="4" data-key="t-notiz" data-bind="notizen" placeholder="Ansagen, Organisatorisches, Verletzungen …">${esc(t.notizen||"")}</textarea></section>
@@ -125,6 +148,19 @@ $("#overlay").addEventListener("click",e=>{
   if(a==="adLim")openEinschr(pid,S.sel.training);
 });
 $("#app").addEventListener("input",e=>{const el=e.target;if(el.dataset.act==="tQ"){S.ui.tq=el.value;render();}});
+/* Schritt-Kopie, Durchführung */
+$("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const t=S.trainings[S.sel.training];if(!t)return;const a=el.dataset.act,s=t.ablauf[+el.dataset.i];
+  const save=()=>{saveLater("training",S.sel.training);render();};
+  if(a==="stepNeben"&&s){const v=el.dataset.v;s.neben=(s.neben||[]).includes(v)?s.neben.filter(x=>x!==v):[...(s.neben||[]),v];save();}
+  if(a==="stepRefresh"&&s&&S.uebungen[s.uebungId]){Object.assign(s,snapshot(S.uebungen[s.uebungId]));save();toast("Aus der Bibliothek übernommen");}
+  if(a==="stepAus"&&s){s.ausgefallen=!s.ausgefallen;if(!s.ausgefallen)delete s.ausgefallen;save();}
+  if(a==="durchToggle"){t.durchgefuehrt=!t.durchgefuehrt;save();toast(t.durchgefuehrt?"Als durchgeführt markiert":"Wieder als geplant markiert");}
+});
+$("#app").addEventListener("change",e=>{const el=e.target,a=el.dataset.act;const t=S.trainings[S.sel.training];if(!t)return;
+  if(a==="stepF"){const s=t.ablauf[+el.dataset.i];const v=el.value.trim();if(el.dataset.f==="name"&&!v){el.value=s.name||"";return;}s[el.dataset.f]=v;saveLater("training",S.sel.training);render();}
+  if(a==="stepIst"){const s=t.ablauf[+el.dataset.i];if(el.value==="")delete s.istDauer;else s.istDauer=Math.max(0,num(el.value));saveLater("training",S.sel.training);render();}
+  if(a==="blkIst"){t.bloecke=t.bloecke||{};const c=t.bloecke[el.dataset.b]=t.bloecke[el.dataset.b]||{};if(el.value==="")delete c.istDauer;else c.istDauer=Math.max(0,num(el.value));saveLater("training",S.sel.training);render();}
+});
 $("#app").addEventListener("change",e=>{const el=e.target;if(el.dataset.act==="tFilt"){S.ui[el.dataset.f]=el.value;render();}});
 $("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(el&&el.dataset.act==="tFiltReset"){S.ui.tvon=S.ui.tbis=S.ui.ttag="";render();}});
 function openPicker(tag){

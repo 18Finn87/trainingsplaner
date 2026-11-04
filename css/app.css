@@ -433,3 +433,15 @@ details.fold>summary{color:var(--accent)}
 .tmrow .lsuse{grid-column:1 / -1;grid-row:2}
 .tmrow .lsinv input[type=time]{width:96px}
 @media (max-width:640px){.tmrow{grid-template-columns:minmax(0,1fr) auto}.tmrow .lsinv{grid-row:auto}.tmrow .ctl{grid-column:2;grid-row:1}.tmrow .lsuse{grid-row:auto}}
+
+/* Phase 1: Schwerpunkte, Schritt-Kopie, Durchführung */
+.tags .haupt{color:var(--accent2);font-weight:600;border:1px solid var(--accent);border-radius:999px;padding:0 7px}
+.tags .diff{color:var(--muted);font-style:italic}
+.li .hp{font-style:normal;color:var(--accent)}
+.li .hp.none{color:var(--bib)}
+.sedit{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--sunk)}
+.istrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:8px}
+.istrow .lsinv input{width:76px;text-align:center}
+.chip.tag.aus[aria-pressed="true"]{background:var(--bib-soft);border-color:var(--bib);color:var(--bib)}
+.step.aus>div:nth-child(2)>.name,.station.aus .name{text-decoration:line-through;opacity:.6}
+.step.aus .clock{opacity:.5}

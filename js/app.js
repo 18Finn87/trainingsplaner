@@ -2,7 +2,7 @@
 /* ---------- actions ---------- */
 function curObj(){return S.view==="training"?["training",S.sel.training]:S.view==="uebungen"?["uebung",S.sel.uebung]:S.view==="spiele"?["spiel",S.sel.spiel]:[null,null];}
 function newTraining(extra={}){const id=uid();S.trainings[id]=Object.assign({datum:nextTrainingDay(),start:teamCfg().start,dauerGesamt:teamCfg().dauer,thema:"",anwesenheit:{},ablauf:[],notizen:"",spielId:sortedSpiele()[0]?.[0]||""},extra,{team:S.team,einschr:einschrSnapshot()});S.sel.training=id;S.view="training";saveLater("training",id);render();}
-function newEx(){const id=uid();S.uebungen[id]={name:"",kategorie:"",dauer:15,minSp:"",maxSp:"",tw:0,teams:"",tags:[],ziel:"",organisation:"",coaching:"",material:{},board:{field:"half",items:[],lines:[]}};saveLater("uebung",id);return id;}
+function newEx(){const id=uid();S.uebungen[id]={name:"",haupt:"",kategorie:"",dauer:15,minSp:"",maxSp:"",tw:0,teams:"",tags:[],ziel:"",organisation:"",coaching:"",material:{},board:{field:"half",items:[],lines:[]}};saveLater("uebung",id);return id;}
 function mimeOf(filename){return filename.endsWith(".json")?"application/json":"text/html";}
 function download(filename,data){
   try{
@@ -87,7 +87,8 @@ $("#app").addEventListener("click",e=>{
     case "editEx":S.sel.uebung=id;S.ui.backTo="training";S.view="uebungen";render();window.scrollTo(0,0);break;
     case "ptDone":{const s=S.spiele[t.spielId];const p=s&&s.punkte.find(x=>x.id===el.dataset.pid);if(p){p.erledigt=!p.erledigt;saveLater("spiel",t.spielId);render();}break;}
     case "exportTraining":exportTraining(t);break;
-    case "dupTraining":{const c=clone(t);c.datum=nextTrainingDay();c.anwesenheit={};delete c.gruende;c.ablauf=c.ablauf.map(s=>({...s,uid:uid()}));newTraining(c);toast("Kopie angelegt");break;}
+    case "dupTraining":{const c=clone(t);c.datum=nextTrainingDay();c.anwesenheit={};delete c.gruende;c.ablauf=c.ablauf.map(s=>{const n={...s,uid:uid()};delete n.ausgefallen;delete n.istDauer;return n;});
+      delete c.durchgefuehrt;delete c.abweichung;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);newTraining(c);toast("Kopie angelegt");break;}
     case "delTraining":if(confirmDel("Dieses Training löschen?")){removeDoc("training",S.sel.training);S.sel.training=null;render();}break;
     case "newEx":{const nid=newEx();S.sel.uebung=nid;S.ui.backTo=null;S.view="uebungen";render();setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);break;}
     case "exTagToggle":{const v=el.dataset.v;ex.tags=ex.tags.includes(v)?ex.tags.filter(x=>x!==v):[...ex.tags,v];saveLater("uebung",S.sel.uebung);render();break;}
@@ -136,6 +137,7 @@ $("#app").addEventListener("change",e=>{
   if(el.dataset.bind&&el.hasAttribute("data-rr")){const o=objFor(kind,id);o[el.dataset.bind]=el.type==="number"?(el.value===""?"":num(el.value)):el.value;saveLater(kind,id);render();return;}
   const a=el.dataset.act;
   if(a==="exTag"){S.ui.tag=el.value;render();}
+  if(a==="exHaupt"){S.ui.haupt=el.value;render();}
   if(a==="stepDur"){S.trainings[S.sel.training].ablauf[+el.dataset.i].dauer=num(el.value);saveLater("training",S.sel.training);render();}
   if(a==="blkRound"||a==="blkRounds"||a==="blkGrp"){const t=S.trainings[S.sel.training];t.bloecke=t.bloecke||{};const c=t.bloecke[el.dataset.b]=t.bloecke[el.dataset.b]||{};
     if(a==="blkRound"){if(el.value==="")delete c.rundenDauer;else c.rundenDauer=Math.max(1,num(el.value));}
@@ -150,8 +152,8 @@ $("#overlay").addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act;
   if(a==="closeOv"&&(e.target===el||el.tagName==="BUTTON")){$("#overlay").innerHTML="";return;}
   if(a==="pickTag"){S.ui.pickTag=el.dataset.v;S.ui.pickFocus=false;renderPicker();}
-  if(a==="addStep"){const t=S.trainings[S.sel.training];t.ablauf.push({uid:uid(),uebungId:el.dataset.id,notiz:""});saveLater("training",S.sel.training);$("#overlay").innerHTML="";render();toast("Übung hinzugefügt");}
-  if(a==="newExFromPick"){const nid=newEx();const t=S.trainings[S.sel.training];t.ablauf.push({uid:uid(),uebungId:nid,notiz:""});saveLater("training",S.sel.training);$("#overlay").innerHTML="";S.sel.uebung=nid;S.ui.backTo="training";S.view="uebungen";render();window.scrollTo(0,0);setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);}
+  if(a==="addStep"){const t=S.trainings[S.sel.training];t.ablauf.push(Object.assign({uid:uid(),uebungId:el.dataset.id,notiz:""},snapshot(S.uebungen[el.dataset.id]||{})));saveLater("training",S.sel.training);$("#overlay").innerHTML="";render();toast("Übung hinzugefügt");}
+  if(a==="newExFromPick"){const nid=newEx();const t=S.trainings[S.sel.training];t.ablauf.push({uid:uid(),uebungId:nid,notiz:"",live:true});saveLater("training",S.sel.training);$("#overlay").innerHTML="";S.sel.uebung=nid;S.ui.backTo="training";S.view="uebungen";render();window.scrollTo(0,0);setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);}
 });
 $("#overlay").addEventListener("input",e=>{if(e.target.dataset.act==="pickQ"){S.ui.pickQ=e.target.value;S.ui.pickFocus=true;renderPicker();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#overlay").innerHTML)$("#overlay").innerHTML="";});

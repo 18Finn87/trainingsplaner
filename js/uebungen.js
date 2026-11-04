@@ -2,15 +2,17 @@
 /* Übungen */
 function vUebungen(){
   const cur=S.sel.uebung&&S.uebungen[S.sel.uebung]?S.sel.uebung:null;
-  const q=S.ui.q.toLowerCase().trim(),tg=S.ui.tag;
-  const txt=e=>[e.name,e.kategorie,e.ziel,e.organisation,e.coaching,...(e.tags||[])].join(" ").toLowerCase();
-  const ents=Object.entries(S.uebungen).filter(([,e])=>(!q||q.split(/\s+/).every(w=>txt(e).includes(w)))&&(!tg||(e.tags||[]).includes(tg)));
+  const q=S.ui.q.toLowerCase().trim(),tg=S.ui.tag,hp=S.ui.haupt||"";
+  const txt=e=>[e.name,e.kategorie,e.haupt,e.ziel,e.organisation,e.coaching,...(e.tags||[])].join(" ").toLowerCase();
+  const ents=Object.entries(S.uebungen).filter(([,e])=>(!q||q.split(/\s+/).every(w=>txt(e).includes(w)))&&(!tg||(e.tags||[]).includes(tg))&&(!hp||(hp==="__ohne"?!e.haupt:e.haupt===hp)));
+  const ohne=Object.values(S.uebungen).filter(e=>!e.haupt).length;
   let li="";katList().concat([""]).forEach(k=>{const g=ents.filter(([,e])=>(e.kategorie||"")===k||(k===""&&!katList().includes(e.kategorie))).sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
-    if(g.length)li+=`<div class="grouphead">${esc(k||"Ohne Kategorie")}</div>`+g.map(([id,e])=>`<button class="li" data-act="selUebung" data-id="${id}" aria-current="${id===cur}"><b>${esc(e.name||"Ohne Namen")}</b><span>${num(e.dauer)} min${e.maxSp?` · ${num(e.minSp)||1}–${num(e.maxSp)} Spielerinnen`:""}${num(e.tw)?` · ${num(e.tw)} TW`:""}</span></button>`).join("");});
+    if(g.length)li+=`<div class="grouphead">${esc(k||"Ohne Kategorie")}</div>`+g.map(([id,e])=>`<button class="li" data-act="selUebung" data-id="${id}" aria-current="${id===cur}"><b>${esc(e.name||"Ohne Namen")}</b><span>${e.haupt?`<em class="hp">${esc(e.haupt)}</em> · `:'<em class="hp none">ohne Hauptschwerpunkt</em> · '}${num(e.dauer)} min${e.maxSp?` · ${num(e.minSp)||1}–${num(e.maxSp)} Spielerinnen`:""}${num(e.tw)?` · ${num(e.tw)} TW`:""}</span></button>`).join("");});
   return `<div class="split${cur?" has-sel":""}"><aside class="list"><h2>Übungen</h2><button class="btn pri new" data-act="newEx">Neue Übung</button>
    <input class="search" type="search" data-key="exq" data-act="exQ" placeholder="Suchen: Name, Ziel, Coaching …" value="${esc(S.ui.q)}">
-   <select class="search" data-act="exTag"><option value="">Alle Trainingsinhalte</option>${S.settings.tags.map(x=>`<option${x===tg?" selected":""}>${esc(x)}</option>`).join("")}</select>
-   ${q||tg?`<p class="legend">${ents.length} von ${Object.keys(S.uebungen).length} Übungen</p>`:""}${li||'<p class="hint">Keine Übungen gefunden.</p>'}</aside>
+   <select class="search" data-act="exHaupt" aria-label="Hauptschwerpunkt">${opt([["","Alle Hauptschwerpunkte"],...(S.settings.schwerpunkte||[]).map(x=>[x,x]),["__ohne",`Ohne Hauptschwerpunkt (${ohne})`]],hp)}</select>
+   <select class="search" data-act="exTag" aria-label="Nebenschwerpunkt">${opt([["","Alle Nebenschwerpunkte"],...S.settings.tags.map(x=>[x,x])],tg)}</select>
+   ${q||tg||hp?`<p class="legend">${ents.length} von ${Object.keys(S.uebungen).length} Übungen</p>`:""}${li||'<p class="hint">Keine Übungen gefunden.</p>'}</aside>
    <div class="editor">${cur?exEditor(cur):`<div class="empty"><h3>Deine Übungssammlung</h3><p>Jede Übung legst du einmal an: Skizze, Ablauf, Spielerzahl und Material. Danach baust du Trainings mit ein paar Klicks.</p><button class="btn pri" data-act="newEx">Neue Übung</button></div>`}</div></div>`;
 }
 function exEditor(id){
@@ -18,13 +20,14 @@ function exEditor(id){
   const bm=boardMaterial(e.board);const hasBm=Object.keys(bm).length;
   return `<div class="ed-top"><button class="btn ghost back" data-act="back">← ${S.ui.backTo?"Zurück zum Training":"Übungen"}</button>${S.ui.backTo?'<button class="btn ghost" data-act="backTraining" style="margin-left:auto">Zurück zum Training</button>':""}</div>
   <div class="ed-top"><input class="title-in" data-key="e-name" data-bind="name" value="${esc(e.name||"")}" placeholder="Name der Übung"></div>
-  <div class="meta"><label class="f">Kategorie<select data-key="e-kat" data-bind="kategorie" data-rr>${opt([["","–"],...katList().map(k=>[k,k]),...(e.kategorie&&!katList().includes(e.kategorie)?[[e.kategorie,e.kategorie]]:[])],e.kategorie||"")}</select></label>
+  <div class="meta"><label class="f">Hauptschwerpunkt<select data-key="e-haupt" data-bind="haupt" data-rr>${opt([["","– noch keiner –"],...(S.settings.schwerpunkte||[]).map(k=>[k,k]),...(e.haupt&&!(S.settings.schwerpunkte||[]).includes(e.haupt)?[[e.haupt,e.haupt]]:[])],e.haupt||"")}</select></label>
+   <label class="f">Kategorie (Organisationsform)<select data-key="e-kat" data-bind="kategorie" data-rr>${opt([["","–"],...katList().map(k=>[k,k]),...(e.kategorie&&!katList().includes(e.kategorie)?[[e.kategorie,e.kategorie]]:[])],e.kategorie||"")}</select></label>
    <label class="f">Dauer (min)<input type="number" min="0" data-key="e-dauer" data-bind="dauer" data-rr value="${esc(e.dauer??"")}"></label>
    <label class="f">Feldspielerinnen min.<input type="number" min="0" data-key="e-min" data-bind="minSp" data-rr value="${esc(e.minSp??"")}"></label>
    <label class="f">Feldspielerinnen max.<input type="number" min="0" data-key="e-max" data-bind="maxSp" data-rr value="${esc(e.maxSp??"")}" placeholder="beliebig"></label>
    <label class="f">Torhüterinnen<input type="number" min="0" data-key="e-tw" data-bind="tw" data-rr value="${esc(e.tw??"")}"></label>
    <label class="f">Teams<input type="number" min="0" data-key="e-teams" data-bind="teams" data-rr value="${esc(e.teams??"")}" placeholder="keine"></label></div>
-  <section class="blk"><h3>Trainiert</h3><p class="hint">Diese Themen verbinden die Übung mit den Kritikpunkten aus deinen Spielberichten.</p><div class="chips">${tagChips(e.tags,"exTagToggle")}</div></section>
+  <section class="blk"><h3>Nebenschwerpunkte</h3><p class="hint">Was die Übung zusätzlich trainiert. Verbindet sie auch mit den Kritikpunkten aus deinen Spielberichten. Gilt für künftig eingeplante Trainings – bereits geplante behalten ihre Angaben.</p><div class="chips">${tagChips(e.tags,"exTagToggle")}</div></section>
   <section class="blk"><h3>Skizze</h3><div data-board="uebung:${id}:board"></div></section>
   <section class="blk"><h3>Ablauf und Coaching</h3><div class="two" style="grid-template-columns:1fr">
    <label class="f">Ziel<textarea data-key="e-ziel" data-bind="ziel" rows="2">${esc(e.ziel||"")}</textarea></label>

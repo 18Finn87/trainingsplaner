@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=4;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=5;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -176,7 +176,37 @@ const MIGRATIONS={
     ["trainings","spiele"].forEach(c=>Object.values(out[c]||{}).forEach(o=>{if(!o.team)o.team="team1";}));
     return out;
   },
+  /* 4 → 5: Haupt-/Nebenschwerpunkte, Schritt-Kopien, Durchführung, bereinigte Texte.
+     – Alle Texte ohne Leerzeichen am Anfang/Ende.
+     – settings.schwerpunkte neu; Übungen mit Kategorie Technik/Taktik/Athletik bekommen diese als Hauptschwerpunkt
+       (übung.haupt). Die bisherigen Inhalte (übung.tags) sind die Nebenschwerpunkte.
+     – Jeder Trainingsschritt bekommt eine Kopie von Name, Kategorie, Haupt- und Nebenschwerpunkten der Übung.
+     – Trainings bis heute mit erfasster Anwesenheit gelten als durchgeführt. */
+  4:d=>{
+    const out=trimDeep(d);const s=out.settings=out.settings||{};
+    s.schwerpunkte=Array.isArray(s.schwerpunkte)?s.schwerpunkte:DEF_SCHWERPUNKTE.slice();
+    Object.values(out.uebungen||{}).forEach(e=>{e.tags=Array.isArray(e.tags)?e.tags:[];
+      if(e.haupt==null)e.haupt=HAUPT_AUS_KAT.includes(e.kategorie)&&s.schwerpunkte.includes(e.kategorie)?e.kategorie:"";});
+    const heute=today();
+    Object.values(out.trainings||{}).forEach(t=>{
+      (t.ablauf||[]).forEach(st=>{const e=(out.uebungen||{})[st.uebungId];if(st.name==null&&e)Object.assign(st,snapshot(e));});
+      if(t.durchgefuehrt==null)t.durchgefuehrt=!!(t.datum&&t.datum<=heute&&Object.values(t.anwesenheit||{}).some(v=>v==="ja"||v==="nein"));
+    });
+    return out;
+  },
 };
+/* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
+function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);
+  if(o&&typeof o==="object"){const r={};Object.keys(o).forEach(k=>r[k]=trimDeep(o[k]));return r;}return o;}
+/* Teil-Dateien (Mannschaft, geteilte Trainings/Übungen) durch dieselben Migrationen schicken. */
+function migratePart(part,v){
+  v=num(v)||1;if(v>DATA_VERSION)throw new Error("neuer");if(v===DATA_VERSION)return part;
+  const wrap=Object.assign({version:v,settings:part.settings||{},uebungen:part.uebungen||{},trainings:part.trainings||{},spiele:part.spiele||{}},
+    v<4?{kader:part.kader||{players:[]}}:{teams:{list:part.team?[part.team]:[]},kaders:part.team?{[part.team.id]:part.kader||{players:[]}}:{}});
+  const m=migrateBackup(wrap);
+  return Object.assign({},part,{version:DATA_VERSION,uebungen:m.uebungen,trainings:m.trainings,spiele:m.spiele,
+    settings:part.settings?m.settings:undefined,kader:part.team?m.kaders[part.team.id]:part.kader,team:part.team?m.teams.list[0]:undefined});
+}
 function migrateBackup(d){
   if(!d||typeof d!=="object")throw new Error("keine Sicherung");
   let v=num(d.version)||1;
@@ -222,12 +252,13 @@ async function importBackup(raw){
 async function importTeam(raw){
   if(num(raw.version)>DATA_VERSION)throw new Error("neuer");
   if(!raw.team||!raw.team.id||!raw.kader)throw new Error("keine Sicherung");
+  raw=migratePart(raw,raw.version);
   const now=Date.now(),tid=raw.team.id,marks=[],w=[];
   const i=S.teamsDoc.list.findIndex(t=>t.id===tid);if(i>=0)S.teamsDoc.list[i]=Object.assign({},S.teamsDoc.list[i],raw.team);else S.teamsDoc.list.push(Object.assign({},raw.team));
   S.teamsDoc.updatedAt=now;marks.push(["teams"]);w.push(["meta","teams",clone(S.teamsDoc)]);
   S.kaders[tid]=Object.assign({players:[]},raw.kader,{updatedAt:now});marks.push(["kader",tid]);w.push(["meta","kader:"+tid,clone(S.kaders[tid])]);
   const rs=raw.settings||{};let sch=false;const add=(list,v)=>{if(v&&!list.includes(v)){list.push(v);sch=true;}};
-  ["tags","kategorien","gruende","positionen"].forEach(k=>(rs[k]||[]).forEach(v=>add(S.settings[k],v)));
+  ["tags","kategorien","gruende","positionen","schwerpunkte"].forEach(k=>(rs[k]||[]).forEach(v=>add(S.settings[k]=S.settings[k]||[],v)));
   (rs.material||[]).forEach(m=>{if(!S.settings.material.some(x=>x.k===m.k)){S.settings.material.push(m);sch=true;}});
   if(sch){S.settings.updatedAt=now;marks.push(["settings"]);w.push(["meta","settings",clone(S.settings)]);}
   Object.entries(raw.uebungen||{}).forEach(([id,e])=>{if(!S.uebungen[id]){S.uebungen[id]=Object.assign({},e,{updatedAt:e.updatedAt||now});marks.push(["uebung",id]);w.push(["uebungen",id,clone(S.uebungen[id])]);}});

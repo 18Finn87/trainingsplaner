@@ -11,7 +11,7 @@ async function sendShared(name,data){const txt=JSON.stringify(data,null,1);if(ca
 function shareTraining(id){
   const t=S.trainings[id];if(!t)return;const ues={};
   (t.ablauf||[]).forEach(s=>{const e=S.uebungen[s.uebungId];if(e)ues[s.uebungId]=ohneZeit(e);});
-  const tt={datum:t.datum,start:t.start, // ohne Mannschaft: der Empfänger ordnet es seiner gewählten Mannschaft zu
+  const tt={datum:t.datum,start:t.start, // ohne Mannschaft und ohne Durchführung: der Empfänger plant damit neu
 dauerGesamt:t.dauerGesamt,thema:t.thema,ablauf:clone(t.ablauf||[])};if(t.bloecke)tt.bloecke=clone(t.bloecke);
   sendShared(`Training_${[t.datum,t.thema&&slug(t.thema)].filter(Boolean).join("_")||"ohne_Datum"}.json`,shareFileData({trainings:{[id]:tt},uebungen:ues}));
 }
@@ -21,6 +21,7 @@ function shareEx(id){const e=S.uebungen[id];if(!e)return;sendShared(`Uebung_${sl
    kommt als Kopie dazu – vorhandene Übungen werden nie überschrieben. Trainings kommen immer als neues Training. */
 function importShared(d){
   if(num(d.version)>DATA_VERSION){toast("Die Datei stammt aus einer neueren Version der App. Bitte zuerst die App aktualisieren.");return;}
+  try{d=migratePart(d,d.version);}catch(e){toast("Die Datei konnte nicht gelesen werden.");return;}
   const ues=d.uebungen||{},trs=d.trainings||{};const nU=Object.keys(ues).length,nT=Object.keys(trs).length;
   if(!nU&&!nT){toast("In der Datei ist nichts zum Übernehmen.");return;}
   const plan={};let neu=0,gleich=0,kopie=0;
@@ -39,7 +40,9 @@ function importShared(d){
     S.uebungen[p.id]=c;saveLater("uebung",p.id);});
   let lastT=null;
   Object.values(trs).forEach(t=>{const id=uid();const c=Object.assign(clone(t),{team:S.team,anwesenheit:{},einschr:einschrSnapshot(),notizen:"",spielId:""});
-    c.ablauf=(c.ablauf||[]).map(s=>({...s,uid:uid(),uebungId:plan[s.uebungId]?plan[s.uebungId].id:s.uebungId}));
+    c.ablauf=(c.ablauf||[]).map(s=>{const n={...s,uid:uid(),uebungId:plan[s.uebungId]?plan[s.uebungId].id:s.uebungId};
+      if(n.name==null&&S.uebungen[n.uebungId])Object.assign(n,snapshot(S.uebungen[n.uebungId]));delete n.ausgefallen;delete n.istDauer;return n;});
+    delete c.durchgefuehrt;delete c.abweichung;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);
     S.trainings[id]=c;saveLater("training",id);lastT=id;});
   if(setCh)saveLater("settings");
   if(lastT){S.sel.training=lastT;S.view="training";}else{const first=Object.values(plan)[0];S.sel.uebung=first.id;S.view="uebungen";}

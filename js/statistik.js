@@ -11,9 +11,10 @@ function zeitraum(){
   if(z==="3m")return {von:iso(new Date(h.getFullYear(),h.getMonth()-3,h.getDate())),bis:heute};
   const sj=h.getMonth()>=6?h.getFullYear():h.getFullYear()-1;return {von:`${sj}-07-01`,bis:heute}; // Saison ab 1. Juli
 }
-const erfasst=t=>Object.values(t.anwesenheit||{}).some(v=>v==="ja"||v==="nein");
-function statTrainings(){const {von,bis}=zeitraum();
-  return ofTeam("trainings").filter(([,t])=>t.datum&&(!von||t.datum>=von)&&t.datum<=bis&&erfasst(t)).sort((a,b)=>a[1].datum.localeCompare(b[1].datum));}
+/* Ausgewertet werden durchgeführte Trainings (Planung separat über „Geplant“). */
+const durchg=t=>!!t.durchgefuehrt;
+function statTrainings(mode="ist"){const {von,bis}=zeitraum();
+  return ofTeam("trainings").filter(([,t])=>t.datum&&(!von||t.datum>=von)&&t.datum<=bis&&(mode==="plan"||durchg(t))).sort((a,b)=>a[1].datum.localeCompare(b[1].datum));}
 const pct=(a,b)=>b?Math.round(a*100/b):0;
 const tipAttr=s=>` data-tip="${esc(s)}" tabindex="0"`;
 
@@ -21,10 +22,10 @@ function vStatistik(){
   const tr=statTrainings(),{von,bis}=zeitraum(),z=S.ui.stZ||"saison",n=tr.length;
   const zsel=`<div class="seg zseg" role="radiogroup" aria-label="Zeitraum">${ZEITRAUM.map(([k,l])=>`<button type="button" role="radio" aria-checked="${z===k}" data-act="stZ" data-v="${k}">${l}</button>`).join("")}</div>
     ${z==="frei"?`<div class="meta"><label class="f">Von<input type="date" data-key="stvon" data-act="stDate" data-f="stVon" value="${esc(S.ui.stVon||"")}"></label><label class="f">Bis<input type="date" data-key="stbis" data-act="stDate" data-f="stBis" value="${esc(S.ui.stBis||today())}"></label></div>`:""}
-    <p class="legend">${n} erfasste${n===1?"s":""} Training${n===1?"":"s"}${von?` vom ${esc(fmtDate(von))}`:""} bis ${esc(fmtDate(bis))}</p>`;
+    <p class="legend">${n} durchgeführte${n===1?"s":""} Training${n===1?"":"s"}${von?` vom ${esc(fmtDate(von))}`:""} bis ${esc(fmtDate(bis))}</p>`;
   return `<div class="narrow"><h2 class="page-h">Statistik</h2>${zsel}
     ${limBlock()}
-    ${n?verlaufBlock(tr)+spielerBlock(tr)+inhaltBlock(tr):`<div class="empty" style="margin-top:20px"><h3>Noch keine Daten in diesem Zeitraum</h3><p>Sobald du bei Trainings die Anwesenheit erfasst, erscheint hier die Auswertung.</p></div>`}</div>`;
+    ${n?verlaufBlock(tr)+spielerBlock(tr)+inhaltBlock():`<div class="empty" style="margin-top:20px"><h3>Noch keine Daten in diesem Zeitraum</h3><p>Sobald du Trainings als „durchgeführt“ markierst, erscheint hier die Auswertung.</p></div>`}</div>`;
 }
 
 /* Aktuell nicht voll belastbar – unabhängig vom Zeitraum. */
@@ -33,7 +34,7 @@ function limBlock(){
   const tage=s=>s?Math.max(0,Math.round((new Date(today()+"T12:00")-new Date(s+"T12:00"))/864e5)):null;
   return `<section class="blk"><h3>Nicht voll belastbar <span class="sub">${ps.length?`${ps.length} Spielerin${ps.length>1?"nen":""}`:"alle fit"}</span></h3>
     ${ps.length?`<div class="tablewrap"><table class="mt st"><thead><tr><th>Spielerin</th><th>Grund</th><th>Seit</th><th class="n">Seitdem da</th></tr></thead><tbody>
-    ${ps.map(p=>{const e=p.einschr,d=tage(e.seit);const seit=ofTeam("trainings").map(([,t])=>t).filter(t=>t.datum&&e.seit&&t.datum>=e.seit&&t.datum<=today()&&erfasst(t));const da=seit.filter(t=>t.anwesenheit[p.id]==="ja").length;
+    ${ps.map(p=>{const e=p.einschr,d=tage(e.seit);const seit=ofTeam("trainings").map(([,t])=>t).filter(t=>t.datum&&e.seit&&t.datum>=e.seit&&t.datum<=today()&&durchg(t));const da=seit.filter(t=>t.anwesenheit[p.id]==="ja").length;
       return `<tr><td><b>${esc(p.name)}</b>${p.tw?' <span class="twm">TW</span>':""}</td><td>${esc(e.grund)}${e.notiz?`<div class="src">${esc(e.notiz)}</div>`:""}</td><td>${e.seit?esc(`${+e.seit.slice(8,10)}.${+e.seit.slice(5,7)}.`):"–"}${d!=null?`<div class="src">${d===0?"heute":d===1?"1 Tag":d+" Tage"}</div>`:""}</td><td class="n">${da} / ${seit.length}<div class="src">Trainings</div></td></tr>`;}).join("")}</tbody></table></div>
     <p class="legend">Ändern im Kader oder im Training über „⋯“.</p>`:'<p class="hint">Im Moment ist keine Spielerin als eingeschränkt markiert.</p>'}</section>`;
 }
@@ -56,7 +57,7 @@ function verlaufBlock(tr){
     <p class="legend">Balken antippen zeigt die Zahlen; zweimal tippen öffnet das Training.</p></section>`;
 }
 
-/* Pro Spielerin: Anzahl und Prozent der erfassten Trainings. */
+/* Pro Spielerin: Anzahl und Prozent der durchgeführten Trainings. */
 function spielerBlock(tr){
   const n=tr.length;const sort=S.ui.stSort||"pct";
   const rows=players().map(p=>{let ja=0,nein=0,lim=0;tr.forEach(([,t])=>{const s=t.anwesenheit[p.id];if(s==="ja")ja++;else if(s==="nein")nein++;if(t.einschr&&t.einschr[p.id])lim++;});return {p,ja,nein,lim,pc:pct(ja,n)};})
@@ -69,21 +70,24 @@ function spielerBlock(tr){
       <span class="hl">${esc(r.p.name)}${r.p.tw?' <span class="twm">TW</span>':""}</span><span class="hb"><i style="width:${r.pc}%"></i></span><span class="hv"><b>${r.pc} %</b> ${r.ja}/${n}</span></div>`).join("")}</div></section>`;
 }
 
-/* Trainingsinhalte (oder Kategorien): in wie vielen Trainings und mit wie vielen Minuten. */
-function inhaltBlock(tr){
-  const mode=S.ui.stInh||"tags";const c={};
-  tr.forEach(([,t])=>{const seen=new Set();unitsOf(t).forEach(u=>u.steps.forEach(st=>{if(!st.ex)return;const keys=mode==="tags"?(st.ex.tags||[]):[st.ex.kategorie||"Ohne Kategorie"];
-    // Bei Stationen verbringt jede Gruppe im Schnitt Runden/Stationen Runden an dieser Station.
-    const min=u.block?unitRound(t,u)*unitRounds(t,u)/u.steps.length:u.dur;
-    keys.forEach(k=>{c[k]=c[k]||{n:0,min:0};if(!seen.has(k)){c[k].n++;seen.add(k);}c[k].min+=Math.round(min);});}));});
-  const order=mode==="tags"?S.settings.tags:katList();
-  const rows=Object.entries(c).sort((a,b)=>(b[1].n-a[1].n)||(b[1].min-a[1].min));
-  const nie=order.filter(k=>!c[k]);const max=Math.max(...rows.map(r=>r[1].n),1);
-  return `<section class="blk"><h3>Was wurde trainiert? <span class="sub">${tr.length} Training${tr.length===1?"":"s"}</span></h3>
-    <div class="seg two" role="radiogroup" aria-label="Auswertung nach"><button type="button" role="radio" aria-checked="${mode==="tags"}" data-act="stInh" data-v="tags">Trainingsinhalte</button><button type="button" role="radio" aria-checked="${mode==="kat"}" data-act="stInh" data-v="kat">Kategorien</button></div>
-    <div class="hbars" style="margin-top:14px">${rows.map(([k,v])=>`<div class="hrow"${tipAttr(`${k}: in ${v.n} von ${tr.length} Trainings, zusammen etwa ${v.min} Minuten`)}><span class="hl">${esc(k)}</span><span class="hb"><i style="width:${v.n/max*100}%"></i></span><span class="hv"><b>${v.n}×</b> ${v.min} min</span></div>`).join("")||'<p class="hint">Die Übungen in diesen Trainings haben noch keine Inhalte eingetragen.</p>'}</div>
+/* Was wurde trainiert: nach Haupt-, Nebenschwerpunkten oder Kategorien – durchgeführt (Ist) oder geplant.
+   Ist: nur durchgeführte Trainings, ohne ausgefallene Schritte, mit tatsächlichen Minuten.
+   Minuten bei parallelen Stationen pro Gruppe (Blockdauer / Anzahl Stationen). */
+function inhaltBlock(){
+  const mode=S.ui.stInh||"haupt",pm=S.ui.stPlan||"ist";const tr=statTrainings(pm);const c={};
+  tr.forEach(([,t])=>{const seen=new Set();unitsOf(t).forEach(u=>u.steps.forEach(st=>{if(!st.ex)return;const min=stepMin(t,u,st,pm);if(pm==="ist"&&!min)return;
+    const keys=mode==="tags"?(st.ex.tags||[]):mode==="haupt"?[st.ex.haupt||"Ohne Hauptschwerpunkt"]:[st.ex.kategorie||"Ohne Kategorie"];
+    keys.forEach(k=>{c[k]=c[k]||{n:0,min:0};if(!seen.has(k)){c[k].n++;seen.add(k);}c[k].min+=min;});}));});
+  const order=mode==="tags"?S.settings.tags:mode==="haupt"?(S.settings.schwerpunkte||[]):katList();
+  const rows=Object.entries(c).map(([k,v])=>[k,{n:v.n,min:Math.round(v.min)}]).sort((a,b)=>(b[1].min-a[1].min)||(b[1].n-a[1].n));
+  const nie=order.filter(k=>!c[k]);const max=Math.max(...rows.map(r=>r[1].min),1);
+  const seg=(act,cur,opts)=>`<div class="seg" style="grid-template-columns:repeat(${opts.length},1fr)" role="radiogroup">${opts.map(([v,l])=>`<button type="button" role="radio" aria-checked="${cur===v}" data-act="${act}" data-v="${v}">${l}</button>`).join("")}</div>`;
+  return `<section class="blk"><h3>Was wurde trainiert? <span class="sub">${tr.length} ${pm==="ist"?"durchgeführte":"geplante"} Training${tr.length===1?"":"s"}</span></h3>
+    ${seg("stPlan",pm,[["ist","Durchgeführt"],["plan","Geplant"]])}
+    <div style="margin-top:8px">${seg("stInh",mode,[["haupt","Hauptschwerpunkte"],["tags","Nebenschwerpunkte"],["kat","Kategorien"]])}</div>
+    <div class="hbars" style="margin-top:14px">${rows.map(([k,v])=>`<div class="hrow"${tipAttr(`${k}: in ${v.n} von ${tr.length} Trainings, zusammen etwa ${v.min} Minuten${pm==="ist"?" (tatsächlich)":" (geplant)"}`)}><span class="hl">${esc(k)}</span><span class="hb"><i style="width:${v.min/max*100}%"></i></span><span class="hv"><b>${v.min} min</b> ${v.n}×</span></div>`).join("")||'<p class="hint">Keine Daten für diese Auswahl.</p>'}</div>
     ${nie.length?`<p class="legend">Nicht trainiert: ${esc(nie.join(", "))}</p>`:""}
-    <p class="legend">Zählt, in wie vielen Trainings ein Inhalt mindestens einmal vorkam; Minuten bei parallelen Stationen pro Gruppe.</p></section>`;
+    <p class="legend">${mode==="tags"?"Nebenschwerpunkte sind Zusatzinhalte: Ihre Minuten überschneiden sich und ergeben zusammen nicht die Trainingszeit.":"Minuten pro Spielerin; bei parallelen Stationen pro Gruppe."}${pm==="ist"?" Ausgefallene Schritte zählen nicht, tatsächliche Dauer wo eingetragen.":""}</p></section>`;
 }
 
 /* Tooltip: Maus darüber oder antippen. */
@@ -104,6 +108,7 @@ $("#app").addEventListener("click",e=>{
   if(a==="stSort"){S.ui.stSort=el.dataset.v;render();}
   if(a==="stAktive"){S.ui.stNurAktive=!S.ui.stNurAktive;render();}
   if(a==="stInh"){S.ui.stInh=el.dataset.v;render();}
+  if(a==="stPlan"){S.ui.stPlan=el.dataset.v;render();}
 });
 $("#app").addEventListener("change",e=>{const el=e.target;if(el.dataset.act==="stDate"){S.ui[el.dataset.f]=el.value;render();}});
 window.addEventListener("scroll",()=>{tipEl.hidden=true;},{passive:true});
