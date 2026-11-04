@@ -59,6 +59,9 @@ function vEinstellungen(){
       <span class="ctl">${t.id!==S.team?`<button class="btn sm" data-act="tmPick" data-id="${esc(t.id)}">Wählen</button>`:""}<button class="iconbtn" data-act="tmDel" data-id="${esc(t.id)}" aria-label="${esc(t.name)} löschen"${S.teamsDoc.list.length<2?" disabled":""}>✕</button></span></div>`;}).join("")}</div>
     <div class="addpt"><input class="inp" data-key="tmnew" data-act="tmNew" placeholder="Neue Mannschaft, z. B. Damen 2"><button class="btn" data-act="tmAdd">Anlegen</button></div>
     <p class="legend">Beginn und Dauer sind die Vorgaben für neue Trainings dieser Mannschaft.</p></section>
+  <section class="blk"><h3>Saison</h3><p class="hint">Für die Zeiträume „Saison“ und „Halbserie“ in der Statistik.</p>
+    <div class="meta"><label class="f">Saisonbeginn (TT.MM.)<input data-key="set-saison" data-act="mmdd" data-f="saisonStart" value="${esc(ddmm(S.settings.saisonStart||"07-01"))}" inputmode="numeric" placeholder="01.07."></label>
+    <label class="f">Rückrunde ab (TT.MM.)<input data-key="set-wechsel" data-act="mmdd" data-f="halbserieWechsel" value="${esc(ddmm(S.settings.halbserieWechsel||"01-01"))}" inputmode="numeric" placeholder="01.01."></label></div></section>
   ${listBlock("schwerpunkte")}${listBlock("tags")}${listBlock("kategorien")}
   <section class="blk"><h3>Material und Bestand <span class="sub">${mat.length} Sorten</span></h3><p class="hint">Bezeichnung ändern, Bestand eintragen (leer = wird nicht geprüft), sortieren.</p>
     <details class="fold" data-dkey="set-material"${S.ui.open.dsetmaterial?" open":""}><summary>Material und Bestand bearbeiten</summary>
@@ -145,3 +148,10 @@ $("#app").addEventListener("change",e=>{const el=e.target,a=el.dataset.act;if(a!
   if(a==="tmRename"){const n=el.value.trim();if(!n||S.teamsDoc.list.some(x=>x!==t&&x.name.toLowerCase()===n.toLowerCase())){el.value=t.name;if(n)toast("Diesen Namen gibt es schon.");return;}t.name=n;}
   else t[el.dataset.f]=el.dataset.f==="dauer"?num(el.value):el.value;
   saveLater("teams");render();});
+
+/* Saison: Eingabe TT.MM. ↔ gespeichert MM-TT */
+const ddmm=v=>{const m=/^(\d{2})-(\d{2})$/.exec(v||"");return m?`${m[2]}.${m[1]}.`:"";};
+$("#app").addEventListener("change",e=>{const el=e.target;if(el.dataset.act!=="mmdd")return;
+  const m=/^\s*(\d{1,2})\.(\d{1,2})\.?\s*$/.exec(el.value);const d=m&&+m[1],mo=m&&+m[2];
+  if(!m||mo<1||mo>12||d<1||d>new Date(2024,mo,0).getDate()){toast("Bitte als TT.MM. eingeben, z. B. 01.07.");el.value=ddmm(S.settings[el.dataset.f]);return;}
+  S.settings[el.dataset.f]=`${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;saveLater("settings");render();});

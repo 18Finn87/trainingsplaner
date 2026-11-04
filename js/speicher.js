@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=5;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=6;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -194,6 +194,11 @@ const MIGRATIONS={
     });
     return out;
   },
+  /* 5 → 6: Auswertung. Neu: settings.saisonStart / halbserieWechsel (MM-TT, Standard 1.7. bzw. 1.1.) und
+     optional training.rausAb[spielerin] = Schritt, ab dem eine eingeschränkte Spielerin nicht mehr dabei war.
+     Bestehende Daten bleiben unverändert. */
+  5:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});
+    if(!out.settings.saisonStart)out.settings.saisonStart="07-01";if(!out.settings.halbserieWechsel)out.settings.halbserieWechsel="01-01";return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);

@@ -26,7 +26,7 @@ const ARTN={plus:"Positiv",minus:"Negativ",info:"Hinweis"};
 const S={view:"training",ready:false,mode:"none",meta:{},persistent:false,team:null,teamsDoc:{list:[]},kaders:{},settings:null,uebungen:{},trainings:{},spiele:{},
   sel:{training:null,uebung:null,spiel:null},ui:{open:{},q:"",tag:"",pickQ:"",pickTag:"",backTo:null},notice:""};
 function defaultSettings(){return {tags:DEFAULT_TAGS.slice(),schwerpunkte:DEF_SCHWERPUNKTE.slice(),kategorien:DEF_KAT.slice(),gruende:DEF_GRUENDE.slice(),positionen:DEF_POS.slice(),
-  material:DEF_MAT.map(([k,l])=>({k,l})),inventar:{leibchen:3},leibchenProSatz:9,start:"19:00",dauer:90};}
+  material:DEF_MAT.map(([k,l])=>({k,l})),saisonStart:"07-01",halbserieWechsel:"01-01",inventar:{leibchen:3},leibchenProSatz:9,start:"19:00",dauer:90};}
 S.settings=defaultSettings();
 /* S.kader ist immer der Kader der gewählten Mannschaft. */
 Object.defineProperty(S,"kader",{get(){const t=S.team||"team1";if(!S.kaders[t])S.kaders[t]={players:[]};return S.kaders[t];},set(v){S.kaders[S.team||"team1"]=v;}});

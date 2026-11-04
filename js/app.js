@@ -88,7 +88,7 @@ $("#app").addEventListener("click",e=>{
     case "ptDone":{const s=S.spiele[t.spielId];const p=s&&s.punkte.find(x=>x.id===el.dataset.pid);if(p){p.erledigt=!p.erledigt;saveLater("spiel",t.spielId);render();}break;}
     case "exportTraining":exportTraining(t);break;
     case "dupTraining":{const c=clone(t);c.datum=nextTrainingDay();c.anwesenheit={};delete c.gruende;c.ablauf=c.ablauf.map(s=>{const n={...s,uid:uid()};delete n.ausgefallen;delete n.istDauer;return n;});
-      delete c.durchgefuehrt;delete c.abweichung;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);newTraining(c);toast("Kopie angelegt");break;}
+      delete c.durchgefuehrt;delete c.abweichung;delete c.rausAb;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);newTraining(c);toast("Kopie angelegt");break;}
     case "delTraining":if(confirmDel("Dieses Training löschen?")){removeDoc("training",S.sel.training);S.sel.training=null;render();}break;
     case "newEx":{const nid=newEx();S.sel.uebung=nid;S.ui.backTo=null;S.view="uebungen";render();setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);break;}
     case "exTagToggle":{const v=el.dataset.v;ex.tags=ex.tags.includes(v)?ex.tags.filter(x=>x!==v):[...ex.tags,v];saveLater("uebung",S.sel.uebung);render();break;}

@@ -30,9 +30,10 @@ function trainingEditor(id){
   const spOpts=[["","kein Spiel"],...sortedSpiele().map(([sid,s])=>[sid,`${fmtDate(s.datum)} – ${s.gegner||"Gegner offen"}`])];
   // attendance: ein Tipp = anwesend; „⋯“ für Abwesenheitsgrund und Einschränkung
   const ps=players();
-  const chips=ps.map(p=>{const s=att[p.id]||"",lim=t.einschr[p.id],gr=t.gruende&&t.gruende[p.id];
+  const rausStart={};unitsOf(t).forEach(u=>rausStart[u.steps[0].s.uid]=u.start);
+  const chips=ps.map(p=>{const s=att[p.id]||"",lim=t.einschr[p.id],gr=t.gruende&&t.gruende[p.id],ra=s==="ja"&&t.rausAb&&rausStart[t.rausAb[p.id]];
     const info=[ATTL[s],lim?`eingeschränkt: ${lim.grund}`:"",s==="nein"&&gr?gr.grund:""].filter(Boolean).join(", ");
-    return `<span class="achip" data-s="${s}"${lim?' data-lim="1"':""}><button type="button" class="amain" data-act="att" data-id="${p.id}" aria-label="${esc(p.name)}: ${esc(info)} – tippen: ${s==="ja"?"wieder offen":"anwesend"}">${p.tw?'<span class="tw">TW</span>':""}<span class="an">${esc(p.name)}</span>${lim?'<span class="limdot" title="eingeschränkt">!</span>':""}${s==="nein"&&gr?`<span class="agr">${esc(gr.grund)}</span>`:""}</button><button type="button" class="amore" data-act="attMore" data-id="${p.id}" aria-label="Details zu ${esc(p.name)}">⋯</button></span>`;}).join("");
+    return `<span class="achip" data-s="${s}"${lim?' data-lim="1"':""}><button type="button" class="amain" data-act="att" data-id="${p.id}" aria-label="${esc(p.name)}: ${esc(info)} – tippen: ${s==="ja"?"wieder offen":"anwesend"}">${p.tw?'<span class="tw">TW</span>':""}<span class="an">${esc(p.name)}</span>${lim?'<span class="limdot" title="eingeschränkt">!</span>':""}${s==="nein"&&gr?`<span class="agr">${esc(gr.grund)}</span>`:""}${ra?`<span class="agr">raus ab ${esc(ra)}</span>`:""}</button><button type="button" class="amore" data-act="attMore" data-id="${p.id}" aria-label="Details zu ${esc(p.name)}">⋯</button></span>`;}).join("");
   const noTw=ps.length&&!ps.some(p=>p.tw);
   // fokus
   const pts=openPoints(t);
@@ -137,11 +138,17 @@ function openAttDialog(pid){
       <label class="f" style="margin-top:10px">Notiz (optional)<input class="inp" id="adNotiz" value="${esc(g.notiz||"")}" placeholder="z. B. Spätschicht"></label>
       <div class="row-actions"><button class="btn pri" data-act="adSave" data-id="${pid}">Grund speichern</button></div>`:""}
     <div class="adlim"><b>Belastung</b><span>${lim?`Eingeschränkt: ${esc(lim.grund)}${lim.notiz?` – ${esc(lim.notiz)}`:""}`:"Voll belastbar"}</span>
-      <button type="button" class="btn sm${lim?" pri":""}" data-act="adLim" data-id="${pid}">${lim?"Einschränkung ändern":"Als eingeschränkt markieren"}</button></div></div></div>`;
+      <button type="button" class="btn sm${lim?" pri":""}" data-act="adLim" data-id="${pid}">${lim?"Einschränkung ändern":"Als eingeschränkt markieren"}</button></div>
+    ${lim&&s==="ja"&&(t.ablauf||[]).length?`<label class="f" style="margin-top:14px">Mitgemacht bis<select id="adRaus" data-act="adRaus" data-id="${pid}">${opt([["","bis zum Ende dabei"],...unitsOf(t).map(u=>[u.steps[0].s.uid,`raus ab ${u.start} – ${u.steps.map(st=>exName(st.ex)).join(" / ")}`])],(t.rausAb||{})[pid]||"")}</select></label>
+      <p class="legend">Für die Statistik: Ihre Minuten zählen nur bis vor diesen Schritt, der Rest als verpasst.</p>`:""}</div></div>`;
 }
+$("#overlay").addEventListener("change",e=>{const el=e.target;if(el.dataset.act!=="adRaus")return;const t=S.trainings[S.sel.training];if(!t)return;
+  t.rausAb=t.rausAb||{};if(el.value)t.rausAb[el.dataset.id]=el.value;else delete t.rausAb[el.dataset.id];if(!Object.keys(t.rausAb).length)delete t.rausAb;
+  saveLater("training",S.sel.training);render();toast("Gespeichert");});
 $("#overlay").addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act,pid=el.dataset.id;const t=S.trainings[S.sel.training];if(!t)return;
   if(a==="adSet"){const v=el.dataset.v;if(v)t.anwesenheit[pid]=v;else delete t.anwesenheit[pid];if(v!=="nein"&&t.gruende)delete t.gruende[pid];
+    if(v!=="ja"&&t.rausAb){delete t.rausAb[pid];if(!Object.keys(t.rausAb).length)delete t.rausAb;}
     saveLater("training",S.sel.training);render();if(v==="nein")openAttDialog(pid);else $("#overlay").innerHTML="";}
   if(a==="adSave"){const grund=$("#adGrund").value,notiz=$("#adNotiz").value.trim();t.gruende=t.gruende||{};
     if(grund||notiz)t.gruende[pid]={grund,notiz};else delete t.gruende[pid];saveLater("training",S.sel.training);$("#overlay").innerHTML="";render();toast("Gespeichert");}

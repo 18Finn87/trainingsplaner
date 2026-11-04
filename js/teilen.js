@@ -42,7 +42,7 @@ function importShared(d){
   Object.values(trs).forEach(t=>{const id=uid();const c=Object.assign(clone(t),{team:S.team,anwesenheit:{},einschr:einschrSnapshot(),notizen:"",spielId:""});
     c.ablauf=(c.ablauf||[]).map(s=>{const n={...s,uid:uid(),uebungId:plan[s.uebungId]?plan[s.uebungId].id:s.uebungId};
       if(n.name==null&&S.uebungen[n.uebungId])Object.assign(n,snapshot(S.uebungen[n.uebungId]));delete n.ausgefallen;delete n.istDauer;return n;});
-    delete c.durchgefuehrt;delete c.abweichung;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);
+    delete c.durchgefuehrt;delete c.abweichung;delete c.rausAb;if(c.bloecke)Object.values(c.bloecke).forEach(b=>delete b.istDauer);
     S.trainings[id]=c;saveLater("training",id);lastT=id;});
   if(setCh)saveLater("settings");
   if(lastT){S.sel.training=lastT;S.view="training";}else{const first=Object.values(plan)[0];S.sel.uebung=first.id;S.view="uebungen";}
