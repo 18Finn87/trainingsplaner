@@ -1,0 +1,14 @@
+# Diese Dateien kommen NICHT zu GitHub (persönliche Daten, Sicherungen, Office-Dateien)
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.pdf
+*.json
+*.zip
+~$*
+original/
+sicherungen/
+# Windows
+Thumbs.db
+desktop.ini
