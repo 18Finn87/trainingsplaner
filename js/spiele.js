@@ -28,9 +28,26 @@ function spielEditor(id){
   <div class="meta"><label class="f">Datum<input type="date" data-key="s-datum" data-bind="datum" value="${esc(s.datum||"")}"></label>
    <label class="f">Ergebnis<input data-key="s-erg" data-bind="ergebnis" value="${esc(s.ergebnis||"")}" placeholder="z. B. 2:1"></label>
    <label class="f">Wettbewerb<input data-key="s-wb" data-bind="wettbewerb" value="${esc(s.wettbewerb||"")}" placeholder="Liga, Pokal …"></label></div>
+  ${spielKader(id,s)}
   <p class="hint">Kreis antippen wechselt zwischen negativ (−), positiv (+) und Hinweis (•). „Trainieren“ schickt den Punkt in die Trainingsplanung.</p>
   ${half(1)}${half(2)}
   <section class="blk"><h3>Gesamteindruck</h3><textarea class="inp" style="width:100%" rows="3" data-key="s-fazit" data-bind="fazit">${esc(s.fazit||"")}</textarea></section>
   <div class="row-actions"><button class="btn pri" data-act="trainingFromSpiel">Training daraus planen${nTr?` (${nTr} Punkte)`:""}</button><button class="btn ghost danger" data-act="delSpiel">Spielbericht löschen</button></div>`;
 }
 
+/* Spielkader: wer war beim Spiel dabei (s.kader = Liste von Spielerinnen-Kennungen). */
+function spielKader(id,s){
+  const ps=players().slice().sort(nrSort);const k=s.kader||[];const open=S.ui.open["dsk"+id]??!k.length;
+  return `<section class="blk"><h3>Kader für dieses Spiel <span class="sub">${k.length?`${k.length} Spielerinnen`:"noch nicht erfasst"}</span></h3>
+    <details class="fold" data-dkey="sk-${id}"${open?" open":""}><summary>${k.length?"Spielkader bearbeiten":"Spielkader auswählen"}</summary>
+    <div class="chips achips">${ps.map(p=>`<button type="button" class="chip tag skc" data-act="skT" data-id="${p.id}" aria-pressed="${k.includes(p.id)}">${p.nummer?`<span class="nr">${esc(p.nummer)}</span>`:""}${esc(p.name)}${p.tw?' <span class="twm">TW</span>':""}</button>`).join("")}</div>
+    <div class="row-actions"><button class="btn sm" data-act="skLast">Anwesende vom letzten Training davor</button>${k.length?'<button class="btn sm ghost" data-act="skNone">Alle abwählen</button>':""}</div></details></section>`;
+}
+$("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act;const s=S.spiele[S.sel.spiel];if(!s||S.view!=="spiele")return;
+  const save=()=>{saveLater("spiel",S.sel.spiel);render();};
+  if(a==="skT"){const pid=el.dataset.id;s.kader=(s.kader||[]).includes(pid)?s.kader.filter(x=>x!==pid):[...(s.kader||[]),pid];save();}
+  if(a==="skNone"){s.kader=[];save();}
+  if(a==="skLast"){const vor=sortedTrainings().map(([,t])=>t).filter(t=>t.datum&&(!s.datum||t.datum<=s.datum)&&Object.values(t.anwesenheit||{}).includes("ja"))[0];
+    if(!vor){toast("Kein Training mit erfasster Anwesenheit vor diesem Spiel.");return;}
+    s.kader=players().filter(p=>vor.anwesenheit[p.id]==="ja").map(p=>p.id);save();toast(`${s.kader.length} Spielerinnen vom ${fmtDate(vor.datum)} übernommen`);}
+});

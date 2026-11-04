@@ -103,7 +103,7 @@ $("#app").addEventListener("click",e=>{
     case "trainingFromSpiel":newTraining({spielId:S.sel.spiel,thema:""});break;
     case "delSpiel":if(confirmDel("Diesen Spielbericht löschen?")){removeDoc("spiel",S.sel.spiel);S.sel.spiel=null;render();}break;
     case "pTw":{const p=pById(id);p.tw=!p.tw;saveLater("kader");render();break;}
-    case "pDel":{const p=pById(id);if(confirmDel(`${p.name} aus dem Kader entfernen?`)){S.kader.players=players().filter(x=>x.id!==id);saveLater("kader");render();}break;}
+    case "pDel":{const p=pById(id);if(confirmDel(`${p.name} aus dem Kader entfernen?`)){S.kader.players=players().filter(x=>x.id!==id);S.sel.spielerin=null;saveLater("kader");render();}break;}
     case "pAdd":addPlayers();break;
     case "tagDel":S.settings.tags=S.settings.tags.filter(x=>x!==el.dataset.v);saveLater("settings");render();break;
     case "tagAdd":addTag();break;

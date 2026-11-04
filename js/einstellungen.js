@@ -29,10 +29,13 @@ const LISTEN={
       return {n,txt:`${n} Eintr${n>1?"ägen":"ag"} bei Spielerinnen und Trainings`};},
     apply:(v,neu)=>{let kch=false;players().forEach(p=>{if(p.einschr&&p.einschr.grund===v){p.einschr.grund=neu||"Sonstiges";kch=true;}});if(kch)saveLater("kader");
       Object.entries(S.trainings).forEach(([id,t])=>{let ch=false;["einschr","gruende"].forEach(f=>Object.values(t[f]||{}).forEach(g=>{if(g&&g.grund===v){g.grund=neu||"Sonstiges";ch=true;}}));if(ch)saveLater("training",id);});}},
-  positionen:{titel:"Positionen",hint:"Für den Kader, z. B. zum Sortieren und Suchen.",
+  positionen:{titel:"Positionen",hint:"Haupt- und weitere Positionen im Kader (alle Mannschaften).",
     get:()=>S.settings.positionen,
-    uses:v=>{const n=players().filter(p=>p.position===v).length;return {n,txt:`${n} Spielerin${n>1?"nen":""}`};},
-    apply:(v,neu)=>{let ch=false;players().forEach(p=>{if(p.position===v){p.position=neu||"";ch=true;}});if(ch)saveLater("kader");}},
+    uses:v=>{const n=Object.values(S.kaders).flatMap(k=>k.players||[]).filter(p=>p.position===v||(p.positionen||[]).includes(v)).length;return {n,txt:`${n} Spielerin${n>1?"nen":""}`};},
+    apply:(v,neu)=>Object.entries(S.kaders).forEach(([tid,k])=>{let ch=false;(k.players||[]).forEach(p=>{
+      if(p.position===v){p.position=neu||"";ch=true;}
+      if((p.positionen||[]).includes(v)){p.positionen=neu?[...new Set(p.positionen.map(x=>x===v?neu:x))].filter(x=>x!==p.position):p.positionen.filter(x=>x!==v);ch=true;}});
+      if(ch)saveLater("kader",tid);})},
 };
 /* Material: Kennung (k) bleibt fest, nur die Bezeichnung (l) ist frei – Übungen speichern die Kennung. */
 const matUses=k=>{const n=Object.values(S.uebungen).filter(e=>num(e.material&&e.material[k])>0).length;return {n,txt:`${n} Übung${n>1?"en":""}`};};
@@ -121,7 +124,7 @@ async function downloadVorUpdate(){
 }
 
 /* ---------- Mannschaften ---------- */
-function switchTeam(id){flushAll();pickTeam(id);S.sel.training=null;S.sel.spiel=null;S.ui.kq="";render();window.scrollTo(0,0);toast(`Mannschaft: ${teamName()}`);}
+function switchTeam(id){flushAll();pickTeam(id);S.sel.training=null;S.sel.spiel=null;S.sel.spielerin=null;S.ui.kq="";render();window.scrollTo(0,0);toast(`Mannschaft: ${teamName()}`);}
 $("#teamSel").addEventListener("change",e=>{const v=e.target.value;if(v==="__verwalten"){e.target.value=S.team;S.view="einstellungen";render();setTimeout(()=>$("#mannschaften")?.scrollIntoView({block:"start"}),0);return;}switchTeam(v);});
 function tmAdd(){const inp=$('[data-act="tmNew"]');const name=inp.value.trim();if(!name)return;
   if(S.teamsDoc.list.some(t=>t.name.toLowerCase()===name.toLowerCase())){toast("Diese Mannschaft gibt es schon.");return;}

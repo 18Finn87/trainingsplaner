@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=6;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=7;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -199,6 +199,16 @@ const MIGRATIONS={
      Bestehende Daten bleiben unverändert. */
   5:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});
     if(!out.settings.saisonStart)out.settings.saisonStart="07-01";if(!out.settings.halbserieWechsel)out.settings.halbserieWechsel="01-01";return out;},
+  /* 6 → 7: Kader und Bibliothek ergänzt.
+     – Spielerin: nummer, positionen (weitere; die bisherige position bleibt Hauptposition), notiz.
+     – Übung: varianten, flaeche, schwierigkeit, favorit, archiviert, video (Bild optional als bild).
+     – Spiel: kader (Spielteilnahme) bleibt bei alten Spielen leer = noch nicht erfasst. */
+  6:d=>{const out=Object.assign({},d);
+    const pl=p=>Object.assign({nummer:"",positionen:[],notiz:""},p,{positionen:(p.positionen||[]).filter(x=>x!==p.position)});
+    if(out.kaders)out.kaders=Object.fromEntries(Object.entries(out.kaders).map(([t,k])=>[t,Object.assign({},k,{players:(k.players||[]).map(pl)})]));
+    if(out.kader)out.kader=Object.assign({},out.kader,{players:(out.kader.players||[]).map(pl)});
+    out.uebungen=Object.fromEntries(Object.entries(out.uebungen||{}).map(([id,e])=>[id,Object.assign({varianten:[],flaeche:"",schwierigkeit:"",favorit:false,archiviert:false,video:""},e)]));
+    return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);

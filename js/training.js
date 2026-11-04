@@ -58,7 +58,7 @@ function trainingEditor(id){
       <div class="row-actions">${st.ex.inBib?`<button class="btn sm" data-act="stepRefresh" data-i="${i}"${stepDiffers(s)?"":" disabled"}>Aus Bibliothek aktualisieren</button><button class="btn sm" data-act="editEx" data-id="${s.uebungId}">Übung in der Bibliothek bearbeiten</button>`:'<span class="legend">Diese Übung gibt es in der Bibliothek nicht mehr – die Angaben hier bleiben erhalten.</span>'}</div></div>`;};
   const exBody=(st,w,ti,pfx)=>{const ex=st.ex;const open=S.ui.open[st.s.uid];
     return `<button class="name" data-act="stepOpen" data-u="${st.s.uid}" aria-expanded="${!!open}">${esc(exName(ex))}</button>
-      <div class="tags"><span>${esc(ex.kategorie||"")}</span>${ex.haupt?`<span class="haupt">${esc(ex.haupt)}</span>`:""}${(ex.tags||[]).map(x=>`<span>#${esc(x)}</span>`).join("")}${ti.map(x=>`<span>${esc(x)}</span>`).join("")}${stepDiffers(st.s)?'<span class="diff" title="Weicht von der Bibliothek ab">angepasst</span>':""}${!ex.inBib?'<span class="diff">nicht mehr in der Bibliothek</span>':""}</div>
+      <div class="tags"><span>${esc(ex.kategorie||"")}</span>${ex.haupt?`<span class="haupt">${esc(ex.haupt)}</span>`:""}${(ex.tags||[]).map(x=>`<span>#${esc(x)}</span>`).join("")}${ti.map(x=>`<span>${esc(x)}</span>`).join("")}${stepDiffers(st.s)?'<span class="diff" title="Weicht von der Bibliothek ab">angepasst</span>':""}${!ex.inBib?'<span class="diff">nicht mehr in der Bibliothek</span>':ex.archiviert?'<span class="diff">archiviert</span>':""}</div>
       ${w.map(x=>`<div class="warn">${esc(x)}</div>`).join("")}
       <input class="inp" style="margin-top:6px;width:100%" data-key="sn-${st.s.uid}" data-act="stepNote" data-i="${st.i}" placeholder="Notiz für heute, z. B. Gruppen" value="${esc(st.s.notiz||"")}">
       ${open?`${stepEdit(st)}<div class="detail"><div>${ex.ziel?`<p><b>Ziel:</b> ${esc(ex.ziel)}</p>`:""}${ex.organisation?`<p><b>Organisation:</b> ${esc(ex.organisation)}</p>`:""}${ex.coaching?`<p><b>Coaching:</b> ${esc(ex.coaching)}</p>`:""}</div><div>${(ex.board&&(ex.board.items||[]).length)?boardSVG(ex.board,pfx+st.i):""}</div></div>`:""}`;};
@@ -177,9 +177,9 @@ function renderPicker(){
   const t=S.trainings[S.sel.training];if(!t){$("#overlay").innerHTML="";return;}
   const hc=headcount(t);const hot=openTags(t);const q=S.ui.pickQ.toLowerCase(),tg=S.ui.pickTag;
   const inPlan=new Set((t.ablauf||[]).map(s=>s.uebungId));
-  const exs=Object.entries(S.uebungen).filter(([,e])=>(!q||(e.name||"").toLowerCase().includes(q))&&(!tg||(e.tags||[]).includes(tg)))
-    .map(([id,e])=>({id,e,score:(e.tags||[]).filter(x=>hot.includes(x)).length})).sort((a,b)=>b.score-a.score||(a.e.name||"").localeCompare(b.e.name||""));
-  const list=exs.map(({id,e,score})=>{const w=exCheck(e,hc);return `<div class="pick"><div><b>${esc(e.name||"Ohne Namen")}</b><span>${esc(e.kategorie||"")} · ${num(e.dauer)} min${score?` · passt zu ${score} offenen Punkt${score>1?"en":""}`:""}${inPlan.has(id)?" · schon im Plan":""}</span>
+  const exs=Object.entries(S.uebungen).filter(([,e])=>!e.archiviert&&(!q||(e.name||"").toLowerCase().includes(q))&&(!tg||(e.tags||[]).includes(tg)))
+    .map(([id,e])=>({id,e,score:(e.tags||[]).filter(x=>hot.includes(x)).length})).sort((a,b)=>b.score-a.score||(!!b.e.favorit-!!a.e.favorit)||(a.e.name||"").localeCompare(b.e.name||""));
+  const list=exs.map(({id,e,score})=>{const w=exCheck(e,hc);return `<div class="pick"><div><b>${e.favorit?"★ ":""}${esc(e.name||"Ohne Namen")}</b><span>${esc(e.haupt||e.kategorie||"")} · ${num(e.dauer)} min${score?` · passt zu ${score} offenen Punkt${score>1?"en":""}`:""}${inPlan.has(id)?" · schon im Plan":""}</span>
     <div class="fit ${w.length?"no":"yes"}">${w.length?esc(w[0]):`passt für ${hc.F} Feldspielerinnen und ${hc.T} TW`}</div></div><button class="btn sm pri" data-act="addStep" data-id="${id}">Hinzufügen</button></div>`;}).join("");
   $("#overlay").innerHTML=`<div class="ov" data-act="closeOv"><div class="panel" role="dialog" aria-modal="true" aria-label="Übung hinzufügen"><h3>Übung hinzufügen <button class="iconbtn" data-act="closeOv" aria-label="Schließen">✕</button></h3>
    <input class="search" id="pickQ" placeholder="Übung suchen" value="${esc(S.ui.pickQ)}" data-act="pickQ">
