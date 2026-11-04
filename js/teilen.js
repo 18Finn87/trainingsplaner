@@ -12,7 +12,7 @@ function shareTraining(id){
   const t=S.trainings[id];if(!t)return;const ues={};
   (t.ablauf||[]).forEach(s=>{const e=S.uebungen[s.uebungId];if(e)ues[s.uebungId]=ohneZeit(e);});
   const tt={datum:t.datum,start:t.start, // ohne Mannschaft und ohne Durchführung: der Empfänger plant damit neu
-dauerGesamt:t.dauerGesamt,thema:t.thema,ablauf:clone(t.ablauf||[])};if(t.bloecke)tt.bloecke=clone(t.bloecke);
+dauerGesamt:t.dauerGesamt,thema:t.thema,ablauf:clone(t.ablauf||[])};if(t.bloecke)tt.bloecke=clone(t.bloecke);if(t.gruppen)tt.gruppen=clone(t.gruppen);
   sendShared(`Training_${[t.datum,t.thema&&slug(t.thema)].filter(Boolean).join("_")||"ohne_Datum"}.json`,shareFileData({trainings:{[id]:tt},uebungen:ues}));
 }
 function shareEx(id){const e=S.uebungen[id];if(!e)return;sendShared(`Uebung_${slug(e.name)}.json`,shareFileData({uebungen:{[id]:ohneZeit(e)}}));}

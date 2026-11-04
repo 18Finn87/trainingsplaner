@@ -105,6 +105,7 @@ function normBlocks(t){
   });
   if(t.bloecke)Object.keys(t.bloecke).forEach(k=>{if(!seen.has(k))delete t.bloecke[k];});
   if(t.bloecke&&!Object.keys(t.bloecke).length)delete t.bloecke;
+  if(typeof normGruppen==="function")normGruppen(t); // eingefügte Trainingsblöcke (bloecke.js) zusammenhängend halten
 }
 function openPoints(t){
   const sp=t.spielId&&S.spiele[t.spielId];if(!sp)return [];

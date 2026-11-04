@@ -508,3 +508,16 @@ details.fold>summary{color:var(--accent)}
 .var{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--sunk)}
 .exbild{display:block;max-width:100%;max-height:360px;border-radius:12px;border:1px solid var(--line)}
 label.btn{display:inline-flex;align-items:center;cursor:pointer}
+
+/* ---------- Phase 4: Trainingsblöcke ---------- */
+.tgroup{border:1px solid var(--accent);border-radius:14px;padding:4px 12px 8px;margin:14px 0}
+.tg-head{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.tg-name{color:var(--accent2);font-size:16px}
+.tg-rest{font-size:13px;margin-top:2px}
+.tg-ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tg-ctl .lsinv input{width:70px;text-align:center}
+.tgroup>.step:first-of-type{border-top:0}
+.frei{color:var(--ok)}
+.vstep .ctl input{width:64px}
+/* „Aus dem Spiel mitnehmen“: auf dem Handy Knöpfe unter den Text statt daneben */
+@media (max-width:640px){.fp{grid-template-columns:22px minmax(0,1fr)}.fp .ctl{grid-column:2;flex-wrap:wrap;justify-content:flex-start}}

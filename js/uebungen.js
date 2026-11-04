@@ -1,6 +1,7 @@
 "use strict";
 /* Übungen */
 function vUebungen(){
+  if(S.ui.bib==="bloecke")return vBloecke();
   const cur=S.sel.uebung&&S.uebungen[S.sel.uebung]?S.sel.uebung:null;
   const q=S.ui.q.toLowerCase().trim(),tg=S.ui.tag,hp=S.ui.haupt||"",fav=!!S.ui.nurFav,arch=!!S.ui.archiv;
   const txt=e=>[e.name,e.kategorie,e.haupt,e.ziel,e.organisation,e.coaching,e.flaeche,...(e.tags||[]),...(e.varianten||[]).map(v=>v.name+" "+v.text)].join(" ").toLowerCase();
@@ -13,7 +14,7 @@ function vUebungen(){
   const favs=arch?[]:ents.filter(([,e])=>e.favorit).sort(byName);let li=favs.length?`<div class="grouphead">★ Favoriten</div>`+favs.map(item).join(""):"";
   katList().concat([""]).forEach(k=>{const g=ents.filter(([,e])=>(arch||!e.favorit)&&((e.kategorie||"")===k||(k===""&&!katList().includes(e.kategorie)))).sort(byName);
     if(g.length)li+=`<div class="grouphead">${esc(k||"Ohne Kategorie")}</div>`+g.map(item).join("");});
-  return `<div class="split${cur?" has-sel":""}"><aside class="list"><h2>${arch?"Archiv":"Übungen"}</h2>${arch?"":'<button class="btn pri new" data-act="newEx">Neue Übung</button>'}
+  return `<div class="split${cur?" has-sel":""}"><aside class="list">${bibSwitch()}<h2>${arch?"Archiv":"Übungen"}</h2>${arch?"":'<button class="btn pri new" data-act="newEx">Neue Übung</button>'}
    <input class="search" type="search" data-key="exq" data-act="exQ" placeholder="Suchen: Name, Ziel, Variante …" value="${esc(S.ui.q)}">
    <select class="search" data-act="exHaupt" aria-label="Hauptschwerpunkt">${opt([["","Alle Hauptschwerpunkte"],...(S.settings.schwerpunkte||[]).map(x=>[x,x]),["__ohne",`Ohne Hauptschwerpunkt (${ohne})`]],hp)}</select>
    <select class="search" data-act="exTag" aria-label="Nebenschwerpunkt">${opt([["","Alle Nebenschwerpunkte"],...S.settings.tags.map(x=>[x,x])],tg)}</select>

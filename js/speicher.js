@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=7;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=8;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -40,12 +40,12 @@ function idbGet(st,k){return new Promise((res,rej)=>{const r=idb.transaction(st)
 const kaderTeam=id=>id&&id!=="x"?id:(S.team||"team1");
 function locate(kind,id){
   if(kind==="kader")return ["meta","kader:"+kaderTeam(id)];
-  if(kind==="settings"||kind==="teams")return ["meta",kind];
+  if(kind==="settings"||kind==="teams"||kind==="vorlagen")return ["meta",kind];
   return [STORE[kind],id];
 }
 function objFor(kind,id){
   if(kind==="kader")return S.kaders[kaderTeam(id)];
-  if(kind==="settings")return S.settings;if(kind==="teams")return S.teamsDoc;
+  if(kind==="settings")return S.settings;if(kind==="teams")return S.teamsDoc;if(kind==="vorlagen")return S.vorlagenDoc;
   return kind==="uebung"?S.uebungen[id]:kind==="training"?S.trainings[id]:S.spiele[id];
 }
 function saveLater(kind,id="x"){
@@ -102,7 +102,7 @@ function pickTeam(id){
 /* Datenobjekt im Sicherungsformat (Version 4) in den Zustand übernehmen. */
 function applyData(d){
   S.settings=Object.assign(defaultSettings(),d.settings||{});
-  S.teamsDoc=Object.assign({list:[]},d.teams||{});
+  S.teamsDoc=Object.assign({list:[]},d.teams||{});S.vorlagenDoc=Object.assign({list:[]},d.vorlagen||{});
   if(!S.teamsDoc.list.length)S.teamsDoc.list=[{id:"team1",name:"Damen 1",start:S.settings.start||"19:00",dauer:num(S.settings.dauer)||90}];
   S.kaders={};Object.entries(d.kaders||{}).forEach(([t,k])=>S.kaders[t]=Object.assign({players:[]},k));
   S.uebungen=d.uebungen||{};S.trainings=d.trainings||{};S.spiele=d.spiele||{};
@@ -111,13 +111,13 @@ function applyData(d){
 /* Inhalt der Browser-Datenbank → Datenobjekt (alte Stände haben noch einen einzelnen „kader“). */
 function fromStore(x){
   const d={version:x.meta.schema,settings:x.meta.settings,uebungen:x.uebungen,trainings:x.trainings,spiele:x.spiele};
-  if(x.meta.teams){d.teams=x.meta.teams;d.kaders={};Object.keys(x.meta).forEach(k=>{if(k.startsWith("kader:"))d.kaders[k.slice(6)]=x.meta[k];});}
+  if(x.meta.vorlagen)d.vorlagen=x.meta.vorlagen;if(x.meta.teams){d.teams=x.meta.teams;d.kaders={};Object.keys(x.meta).forEach(k=>{if(k.startsWith("kader:"))d.kaders[k.slice(6)]=x.meta[k];});}
   else d.kader=Object.assign({players:[]},x.meta.kader||{});
   return d;
 }
 /* Datenobjekt (Version 4) → Schreibvorgänge für die Browser-Datenbank. */
 function toWrites(d){
-  const w=[];if(d.teams)w.push(["meta","teams",d.teams]);if(d.settings)w.push(["meta","settings",d.settings]);
+  const w=[];if(d.teams)w.push(["meta","teams",d.teams]);if(d.vorlagen)w.push(["meta","vorlagen",d.vorlagen]);if(d.settings)w.push(["meta","settings",d.settings]);
   Object.entries(d.kaders||{}).forEach(([t,k])=>w.push(["meta","kader:"+t,k]));
   ["uebungen","trainings","spiele"].forEach(st=>Object.entries(d[st]||{}).forEach(([id,o])=>w.push([st,id,o])));return w;
 }
@@ -209,6 +209,11 @@ const MIGRATIONS={
     if(out.kader)out.kader=Object.assign({},out.kader,{players:(out.kader.players||[]).map(pl)});
     out.uebungen=Object.fromEntries(Object.entries(out.uebungen||{}).map(([id,e])=>[id,Object.assign({varianten:[],flaeche:"",schwierigkeit:"",favorit:false,archiviert:false,video:""},e)]));
     return out;},
+  /* 7 → 8: wiederverwendbare Trainingsblöcke. Neu: vorlagen {list:[{id,name,bereich,dauer,notiz,schritte}]},
+     settings.bereiche; im Training optional schritt.gruppe + training.gruppen (eingefügter Block als Kopie). */
+  7:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});
+    if(!Array.isArray(out.settings.bereiche))out.settings.bereiche=DEF_BEREICHE.slice();
+    out.vorlagen=Object.assign({list:[]},out.vorlagen||{});return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);
@@ -230,7 +235,7 @@ function migrateBackup(d){
   d=clone(d);while(v<DATA_VERSION){d=MIGRATIONS[v](d);v++;}
   d.version=DATA_VERSION;return d;
 }
-function backupData(){return {version:DATA_VERSION,exportiertAm:new Date().toISOString(),teams:S.teamsDoc,kaders:S.kaders,settings:S.settings,uebungen:S.uebungen,trainings:S.trainings,spiele:S.spiele};}
+function backupData(){return {version:DATA_VERSION,exportiertAm:new Date().toISOString(),teams:S.teamsDoc,vorlagen:S.vorlagenDoc,kaders:S.kaders,settings:S.settings,uebungen:S.uebungen,trainings:S.trainings,spiele:S.spiele};}
 /* Nur eine Mannschaft: ihr Kader, ihre Trainings und Spiele, dazu die darin verwendeten Übungen und die Listen. */
 const TEAM_TYP="trainingsplaner-mannschaft";
 function teamBackupData(tid){
@@ -253,10 +258,13 @@ async function importBackup(raw){
   d.teams.list.forEach(t=>{const i=teams.list.findIndex(x=>x.id===t.id);if(i>=0)teams.list[i]=Object.assign({},t);else teams.list.push(Object.assign({},t));});
   teams.updatedAt=now;const settings=Object.assign(defaultSettings(),d.settings||{},{updatedAt:now});
   const kaders=Object.assign({},S.kaders);Object.entries(d.kaders).forEach(([t,k])=>kaders[t]=Object.assign({players:[]},k,{updatedAt:now}));
-  const next={teams,settings,kaders,uebungen:Object.assign({},S.uebungen),trainings:Object.assign({},S.trainings),spiele:Object.assign({},S.spiele)};
-  const marks=[["teams"],["settings"],...Object.keys(d.kaders).map(t=>["kader",t])];
+  // Blockvorlagen: gleiche Kennung überschreiben, andere bleiben
+  const vorlagen={list:S.vorlagenDoc.list.map(v=>Object.assign({},v)),updatedAt:now};
+  (d.vorlagen&&d.vorlagen.list||[]).forEach(v=>{const i=vorlagen.list.findIndex(x=>x.id===v.id);if(i>=0)vorlagen.list[i]=v;else vorlagen.list.push(v);});
+  const next={teams,vorlagen,settings,kaders,uebungen:Object.assign({},S.uebungen),trainings:Object.assign({},S.trainings),spiele:Object.assign({},S.spiele)};
+  const marks=[["teams"],["vorlagen"],["settings"],...Object.keys(d.kaders).map(t=>["kader",t])];
   [["uebungen","uebung"],["trainings","training"],["spiele","spiel"]].forEach(([st,kind])=>Object.entries(d[st]||{}).forEach(([id,o])=>{next[st][id]=Object.assign({},o,{updatedAt:o.updatedAt||now});marks.push([kind,id]);}));
-  const w=[["meta","schema",DATA_VERSION],["meta","teams",teams],["meta","settings",settings],...Object.keys(d.kaders).map(t=>["meta","kader:"+t,kaders[t]])];
+  const w=[["meta","schema",DATA_VERSION],["meta","teams",teams],["meta","vorlagen",clone(vorlagen)],["meta","settings",settings],...Object.keys(d.kaders).map(t=>["meta","kader:"+t,kaders[t]])];
   ["uebungen","trainings","spiele"].forEach(st=>Object.keys(d[st]||{}).forEach(id=>w.push([st,id,clone(next[st][id])])));
   if(S.mode==="db")await idbWrite(w);
   applyData(next);await commit([],marks);
@@ -293,6 +301,7 @@ if(kanal)kanal.onmessage=async e=>{
     if(m.kind==="kader"){if(v)S.kaders[m.id]=Object.assign({players:[]},v);else delete S.kaders[m.id];}
     else if(m.kind==="settings")S.settings=Object.assign(defaultSettings(),v||{});
     else if(m.kind==="teams"){S.teamsDoc=Object.assign({list:[]},v||{});pickTeam(S.team);}
+    else if(m.kind==="vorlagen")S.vorlagenDoc=Object.assign({list:[]},v||{});
     else if(v)S[st][k]=v;else delete S[st][k];
     queueRender();
   }catch(err){}

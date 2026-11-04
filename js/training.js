@@ -65,7 +65,7 @@ function trainingEditor(id){
   /* Durchführung je Schritt: ausgefallen + tatsächliche Dauer (nur wenn das Training durchgeführt ist). */
   const istCtl=(st,u)=>durch?`<div class="istrow">${u&&!u.block?`<label class="lsinv">Tatsächlich <input class="inp" type="number" min="0" data-key="si-${st.s.uid}" data-act="stepIst" data-i="${st.i}" value="${esc(isSet(st.s.istDauer)?st.s.istDauer:"")}" placeholder="${u.dur}"> min</label>`:""}
       <button type="button" class="chip tag aus" data-act="stepAus" data-i="${st.i}" aria-pressed="${!!st.s.ausgefallen}">${st.s.ausgefallen?"Ausgefallen":"Ausgefallen?"}</button></div>`:"";
-  const rows=units.map((u,ui)=>{
+  const rowArr=units.map((u,ui)=>{
     if(!u.block){const st=u.steps[0],ex=st.ex,i=st.i;
       if(!ex)return `<div class="step"><div class="clock">${u.start}</div><div><b>Gelöschte Übung</b></div><div class="ctl"><button class="iconbtn" data-act="stepDel" data-i="${i}" aria-label="Entfernen">✕</button></div></div>`;
       const ti=teamInfo(ex,hc);
@@ -89,7 +89,8 @@ function trainingEditor(id){
       </div><div class="ctl">${moveCtl(ui)}</div></div>
       <div class="stations" style="--n:${n}">${u.steps.map((st,s)=>`<div class="station${st.s.ausgefallen&&durch?" aus":""}"><div class="st-lab">Station ${s+1}<span>Gruppe${info[s].gruppen.length>1?"n":""} ${info[s].gruppen.join(", ")}</span></div>
         ${st.ex?exBody(st,info[s].warns,info[s].teams,"p"):"<b>Gelöschte Übung</b>"}${istCtl(st,null)}
-        <div class="row-actions" style="margin-top:8px"><button class="btn sm" data-act="stepSolo" data-i="${st.i}">Lösen</button><button class="iconbtn" data-act="stepDel" data-i="${st.i}" aria-label="Entfernen">✕</button></div></div>`).join("")}</div></div>`;}).join("");
+        <div class="row-actions" style="margin-top:8px"><button class="btn sm" data-act="stepSolo" data-i="${st.i}">Lösen</button><button class="iconbtn" data-act="stepDel" data-i="${st.i}" aria-label="Entfernen">✕</button></div></div>`).join("")}</div></div>`;});
+  const rows=wrapGruppen(t,units,rowArr);
   // material
   const need=materialNeed(t);const inv=S.settings.inventar||{};
   const mrows=matList().filter(([k])=>need[k]).map(([k,l])=>{const have=inv[k];const short=have!=null&&have!==""&&num(have)<need[k].n;
@@ -116,7 +117,7 @@ function trainingEditor(id){
   <section class="blk"><h3>Ablauf <span class="sub">${total} von ${len} min${total>len?` · <span class="over">${total-len} min zu lang</span>`:""}</span></h3>
    ${units.length?`<div class="tl">${bar}</div><div class="tl-legend"><span>${esc(t.start||teamCfg().start)}</span><span>Ende ${addMin(t.start||teamCfg().start,total)}</span></div>`:""}
    ${rows||'<p class="hint">Noch keine Übungen. Füge die erste aus deiner Sammlung hinzu.</p>'}
-   <div class="row-actions"><button class="btn pri" data-act="pick">Übung hinzufügen</button></div></section>
+   <div class="row-actions"><button class="btn pri" data-act="pick">Übung hinzufügen</button><button class="btn" data-act="vpOpen">Block einfügen</button></div></section>
 
   <section class="blk"><h3>Durchführung <span class="sub">${durch?`durchgeführt · tatsächlich ${trainingMin(t,"ist")} von ${total} min geplant`:"noch nicht als durchgeführt markiert"}</span></h3>
    <p class="hint">${durch?"Bei jedem Schritt kannst du jetzt „Ausgefallen“ setzen und die tatsächliche Dauer eintragen (leer = wie geplant). Die Statistik zählt nur, was tatsächlich stattgefunden hat.":"Nach dem Training markieren – erst dann zählt es in der Statistik."}</p>

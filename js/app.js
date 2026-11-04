@@ -68,15 +68,15 @@ $("#app").addEventListener("click",e=>{
       if(!confirmDel(`${rest.length} Spielerin${rest.length>1?"nen":""} auf „abwesend“ setzen?${skip?`\n\n${skip} eingeschränkte bleib${skip>1?"en":"t"} offen.`:""}`))break;
       rest.forEach(p=>t.anwesenheit[p.id]="nein");saveLater("training",S.sel.training);render();break;}
     case "attReset":if(!confirmDel("Anwesenheit für dieses Training komplett auf „offen“ zurücksetzen?\nEinschränkungen bleiben erhalten."))break;t.anwesenheit={};delete t.gruende;saveLater("training",S.sel.training);render();break;
-    case "pick":S.ui.pickFocus=true;openPicker("");break;
-    case "pickFor":S.ui.pickFocus=false;openPicker(el.dataset.v);break;
+    case "pick":S.ui.pickFocus=true;S.ui.pickGruppe=null;openPicker("");break;
+    case "pickFor":S.ui.pickFocus=false;S.ui.pickGruppe=null;openPicker(el.dataset.v);break;
     case "stepOpen":S.ui.open[el.dataset.u]=!S.ui.open[el.dataset.u];render();break;
     case "unitUp":case "unitDown":{const us=unitsOf(t),u=+el.dataset.u,v=u+(a==="unitUp"?-1:1);if(v<0||v>=us.length)break;
       [us[u],us[v]]=[us[v],us[u]];t.ablauf=us.flatMap(x=>x.steps.map(st=>st.s));normBlocks(t);saveLater("training",S.sel.training);render();break;}
     case "stepDel":t.ablauf.splice(i,1);normBlocks(t);saveLater("training",S.sel.training);render();break;
     case "stepPar":{const us=unitsOf(t),ui=us.findIndex(u=>u.steps.some(st=>st.i===i));const prev=us[ui-1];if(!prev)break;
       if(prev.steps.length>=MAX_STATIONEN){toast(`Höchstens ${MAX_STATIONEN} Stationen gleichzeitig.`);break;}
-      const b=prev.block||uid();prev.steps.forEach(st=>st.s.block=b);t.ablauf[i].block=b;
+      const b=prev.block||uid();prev.steps.forEach(st=>st.s.block=b);t.ablauf[i].block=b;const pg=prev.steps[0].s.gruppe;if(pg)t.ablauf[i].gruppe=pg;else delete t.ablauf[i].gruppe;
       if(t.bloecke&&t.bloecke[b])delete t.bloecke[b].gruppen;normBlocks(t);saveLater("training",S.sel.training);render();break;}
     case "stepSolo":{const us=unitsOf(t),u=us.find(x=>x.steps.some(st=>st.i===i));const s=t.ablauf[i];delete s.block;
       t.ablauf.splice(i,1);t.ablauf.splice(u.steps[u.steps.length-1].i,0,s); // hinter den Block
@@ -152,8 +152,8 @@ $("#overlay").addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act;
   if(a==="closeOv"&&(e.target===el||el.tagName==="BUTTON")){$("#overlay").innerHTML="";return;}
   if(a==="pickTag"){S.ui.pickTag=el.dataset.v;S.ui.pickFocus=false;renderPicker();}
-  if(a==="addStep"){const t=S.trainings[S.sel.training];t.ablauf.push(Object.assign({uid:uid(),uebungId:el.dataset.id,notiz:""},snapshot(S.uebungen[el.dataset.id]||{})));saveLater("training",S.sel.training);$("#overlay").innerHTML="";render();toast("Übung hinzugefügt");}
-  if(a==="newExFromPick"){const nid=newEx();const t=S.trainings[S.sel.training];t.ablauf.push({uid:uid(),uebungId:nid,notiz:"",live:true});saveLater("training",S.sel.training);$("#overlay").innerHTML="";S.sel.uebung=nid;S.ui.backTo="training";S.view="uebungen";render();window.scrollTo(0,0);setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);}
+  if(a==="addStep"){const t=S.trainings[S.sel.training];insertStep(t,Object.assign({uid:uid(),uebungId:el.dataset.id,notiz:""},snapshot(S.uebungen[el.dataset.id]||{})));saveLater("training",S.sel.training);$("#overlay").innerHTML="";render();toast("Übung hinzugefügt");}
+  if(a==="newExFromPick"){const nid=newEx();const t=S.trainings[S.sel.training];insertStep(t,{uid:uid(),uebungId:nid,notiz:"",live:true});saveLater("training",S.sel.training);$("#overlay").innerHTML="";S.sel.uebung=nid;S.ui.backTo="training";S.view="uebungen";render();window.scrollTo(0,0);setTimeout(()=>$('[data-key="e-name"]')?.focus(),0);}
 });
 $("#overlay").addEventListener("input",e=>{if(e.target.dataset.act==="pickQ"){S.ui.pickQ=e.target.value;S.ui.pickFocus=true;renderPicker();}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#overlay").innerHTML)$("#overlay").innerHTML="";});
