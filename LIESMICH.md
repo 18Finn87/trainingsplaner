@@ -1,18 +1,21 @@
 # Trainingsplaner Oedheim
 
-## Ordner
-- `app/` – die App selbst. **Nur diesen Ordner** ins Internet hochladen.
-- `original/` – die alte Einzeldatei und die Sicherung vom 3.11.2026. Nicht hochladen (Namen der Spielerinnen).
-- `Trainingsplaner starten.bat` – startet die App am PC.
+## Online
+- **App:** https://18finn87.github.io/trainingsplaner/ (auf dem Handy öffnen und installieren, siehe unten)
+- **Code:** https://github.com/18Finn87/trainingsplaner (öffentlich – enthält keine Daten)
+- Dieser Ordner ist mit GitHub verbunden. Word-, PDF-, Excel- und Sicherungsdateien (`.json`) werden nie hochgeladen
+  (siehe `.gitignore`).
+- **Updates:** Claude ändert die Dateien hier und lädt sie (nach Rückfrage) zu GitHub hoch. Nach etwa einer Minute ist
+  die neue Version online; die App holt sie beim nächsten Öffnen mit Internet.
 
 ## Am PC starten
 1. Doppelklick auf **Trainingsplaner starten.bat**.
-2. Der Browser öffnet die App (Adresse steht im schwarzen Fenster, z. B. `http://localhost:8080`).
-   Das schwarze Fenster offen lassen, solange du arbeitest.
+2. Der Browser öffnet die App unter `http://localhost:8081`. Das schwarze Fenster offen lassen, solange du arbeitest.
 3. Zum Beenden das schwarze Fenster schließen.
 
-Wichtig: Der Browser speichert die Daten **pro Adresse**. Was du unter `localhost:8081` eingibst, siehst du unter
-`localhost:8080` nicht. Wirkt die App leer, die andere Adresse probieren.
+Wichtig: Der Browser speichert die Daten **pro Adresse**. `localhost:8081` (PC) und die Online-Adresse haben
+**getrennte** Daten. Übertragen: „Alles sichern“ → Datei → am anderen Ort „Datei einspielen“ –
+oder gemeinsame Daten über Supabase einrichten (siehe unten).
 
 ## Mannschaften
 - Oben neben dem Namen wählst du die Mannschaft; das Gerät merkt sich die Wahl.
