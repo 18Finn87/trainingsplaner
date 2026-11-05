@@ -48,10 +48,10 @@ const SB=(()=>{
   let tm=null;const later=()=>{clearTimeout(tm);tm=setTimeout(()=>syncNow(),2000);};
 
   function docOf(coll,id){
-    if(coll==="meta")return id==="settings"?S.settings:id==="teams"?S.teamsDoc:id==="vorlagen"?S.vorlagenDoc:id.startsWith("kader:")?S.kaders[id.slice(6)]:null;
+    if(coll==="meta")return id==="settings"?S.settings:id==="teams"?S.teamsDoc:id==="vorlagen"?S.vorlagenDoc:id.startsWith("kader:")?S.kaders[id.slice(6)]:id.startsWith("planung:")?S.planungen[id.slice(8)]:null;
     return S[coll]&&S[coll][id];}
   /* Meta-Kennung → [Art, Kennung] wie in speicher.js (für „wird gerade bearbeitet“). */
-  const metaKind=id=>id.startsWith("kader:")?["kader",id.slice(6)]:[id,"x"];
+  const metaKind=id=>id.startsWith("kader:")?["kader",id.slice(6)]:id.startsWith("planung:")?["planung",id.slice(8)]:[id,"x"];
   async function push(){
     const ent=Object.entries(state.pending);if(!ent.length)return 0;
     const docs=ent.map(([,p])=>{const o=p.deleted?null:docOf(p.coll,p.id);return {coll:p.coll,id:p.id,deleted:p.deleted||!o,updated_at:(o&&o.updatedAt)||p.t,data:o?clone(o):null};});
@@ -67,11 +67,12 @@ const SB=(()=>{
       const k=r.coll+"/"+r.id;if(state.pending[k])return; // eigene ungesendete Änderung hat Vorrang, wird gleich hochgeladen
       const [kind,kid]=r.coll==="meta"?metaKind(r.id):[{uebungen:"uebung",trainings:"training",spiele:"spiel"}[r.coll],r.id];
       if(!kind||dirty.has(kind+"/"+kid))return;
-      if(r.coll==="meta"&&!["settings","teams","vorlagen"].includes(r.id)&&!r.id.startsWith("kader:"))return;
+      if(r.coll==="meta"&&!["settings","teams","vorlagen"].includes(r.id)&&!r.id.startsWith("kader:")&&!r.id.startsWith("planung:"))return;
       const cur=docOf(r.coll,r.id);const curT=cur&&cur.updatedAt||0;
-      if(r.deleted){if(cur&&r.updated_at>=curT&&(r.coll!=="meta"||kind==="kader")){if(kind==="kader")delete S.kaders[kid];else delete S[r.coll][r.id];writes.push([r.coll,r.id,null]);changed++;}return;}
+      if(r.deleted){if(cur&&r.updated_at>=curT&&(r.coll!=="meta"||kind==="kader"||kind==="planung")){if(kind==="kader")delete S.kaders[kid];else if(kind==="planung")delete S.planungen[kid];else delete S[r.coll][r.id];writes.push([r.coll,r.id,null]);changed++;}return;}
       if(!cur||r.updated_at>curT){const d=Object.assign({},r.data,{updatedAt:r.updated_at});
         if(kind==="kader")S.kaders[kid]=Object.assign({players:[]},d);
+        else if(kind==="planung")S.planungen[kid]=Object.assign({perioden:[],wochen:[]},d);
         else if(r.id==="settings"&&r.coll==="meta")S.settings=Object.assign(defaultSettings(),d);
         else if(r.id==="teams"&&r.coll==="meta"){S.teamsDoc=Object.assign({list:[]},d);if(S.teamsDoc.list.length)pickTeam(S.team);}
         else if(r.id==="vorlagen"&&r.coll==="meta")S.vorlagenDoc=Object.assign({list:[]},d);
@@ -89,7 +90,7 @@ const SB=(()=>{
   async function firstSync(){
     const any=await api(`/rest/v1/docs?select=id&team=eq.${encodeURIComponent(state.team)}&limit=1`);
     const all=[];const now=Date.now();
-    if(!any||!any.length){all.push(["meta","teams"],["meta","vorlagen"],["meta","settings"],...Object.keys(S.kaders).map(t=>["meta","kader:"+t]));}
+    if(!any||!any.length){all.push(["meta","teams"],["meta","vorlagen"],["meta","settings"],...Object.keys(S.kaders).map(t=>["meta","kader:"+t]),...Object.keys(S.planungen).map(t=>["meta","planung:"+t]));}
     ["uebungen","trainings","spiele"].forEach(c=>Object.keys(S[c]).forEach(id=>all.push([c,id])));
     all.forEach(([c,id])=>{const o=docOf(c,id);if(!o)return;if(!o.updatedAt)o.updatedAt=now;state.pending[c+"/"+id]={coll:c,id,deleted:false,t:o.updatedAt};});
     state.init=true;saveState();

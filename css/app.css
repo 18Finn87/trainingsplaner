@@ -521,3 +521,23 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 .vstep .ctl input{width:64px}
 /* „Aus dem Spiel mitnehmen“: auf dem Handy Knöpfe unter den Text statt daneben */
 @media (max-width:640px){.fp{grid-template-columns:22px minmax(0,1fr)}.fp .ctl{grid-column:2;flex-wrap:wrap;justify-content:flex-start}}
+
+/* ---------- Phase 5: Planung ---------- */
+.plbox{margin:14px 0 4px;padding:12px 14px;border:1px solid var(--accent);border-radius:14px;background:var(--surface);display:flex;flex-direction:column;gap:8px;font-size:14px}
+.plbox.leer{flex-direction:row;align-items:center;justify-content:space-between;border-style:dashed;border-color:var(--line);color:var(--muted)}
+.plbox small{color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:11px;margin-right:4px}
+.plk+.plk{border-top:1px solid var(--line);padding-top:8px}
+.ziel{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;margin-bottom:8px}
+.zart{min-width:96px}
+.si{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.sirow{display:grid;grid-template-columns:minmax(90px,28%) minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:13px;outline:none;border-radius:8px}
+.sirow.warnrow .hl{color:var(--bib)}
+.sibar{position:relative;display:block}
+.sibar .hb{display:block}
+.sibar .hb{height:12px}
+.sibar .soll{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--accent2);transform:translateX(-1px)}
+.sirow .hv small{color:var(--muted)}
+.wrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.wrow .src{display:block;font-size:13px}
+@media (max-width:760px){.tabs button{font-size:12px;padding:12px 2px 10px}}
+.lrow{display:flex;align-items:center}

@@ -130,7 +130,7 @@ async function downloadVorUpdate(){
 }
 
 /* ---------- Mannschaften ---------- */
-function switchTeam(id){flushAll();pickTeam(id);S.sel.training=null;S.sel.spiel=null;S.sel.spielerin=null;S.ui.kq="";render();window.scrollTo(0,0);toast(`Mannschaft: ${teamName()}`);}
+function switchTeam(id){flushAll();pickTeam(id);S.sel.training=null;S.sel.spiel=null;S.sel.spielerin=null;S.sel.periode=null;S.ui.kq="";render();window.scrollTo(0,0);toast(`Mannschaft: ${teamName()}`);}
 $("#teamSel").addEventListener("change",e=>{const v=e.target.value;if(v==="__verwalten"){e.target.value=S.team;S.view="einstellungen";render();setTimeout(()=>$("#mannschaften")?.scrollIntoView({block:"start"}),0);return;}switchTeam(v);});
 function tmAdd(){const inp=$('[data-act="tmNew"]');const name=inp.value.trim();if(!name)return;
   if(S.teamsDoc.list.some(t=>t.name.toLowerCase()===name.toLowerCase())){toast("Diese Mannschaft gibt es schon.");return;}
@@ -142,7 +142,7 @@ async function tmDel(id){
   let ok=false;try{const a=window.prompt(`Mannschaft „${t.name}“ endgültig löschen?\n\nDabei werden gelöscht: ${np} Spielerinnen, ${tr.length} Trainings, ${sp.length} Spielberichte (inklusive Anwesenheit und Statistik).\nÜbungen und Listen bleiben erhalten.\n\nTipp: Vorher „Nur „${t.name}“ sichern“.\n\nZum Bestätigen den Namen der Mannschaft eintippen:`);ok=a!=null&&a.trim()===t.name.trim();if(a!=null&&!ok)toast("Name stimmt nicht – nichts gelöscht.");}catch(e){ok=false;}
   if(!ok)return;
   for(const k of tr)await removeDoc("training",k);for(const k of sp)await removeDoc("spiel",k);
-  delete S.kaders[id];if(S.mode==="db"){try{await idbWrite([["meta","kader:"+id,null]]);}catch(e){}}syncMark("kader",id,true);
+  delete S.kaders[id];delete S.planungen[id];if(S.mode==="db"){try{await idbWrite([["meta","kader:"+id,null],["meta","planung:"+id,null]]);}catch(e){}}syncMark("kader",id,true);syncMark("planung",id,true);
   S.teamsDoc.list=S.teamsDoc.list.filter(x=>x.id!==id);saveLater("teams");
   if(S.team===id)pickTeam(S.teamsDoc.list[0].id);render();toast(`„${t.name}“ gelöscht`);
 }

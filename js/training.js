@@ -102,6 +102,7 @@ function trainingEditor(id){
    <label class="f">Dauer (min)<input type="number" min="0" data-key="t-dauer" data-bind="dauerGesamt" data-rr value="${esc(t.dauerGesamt||teamCfg().dauer)}"></label>
    <label class="f">Spiel als Grundlage<select data-key="t-spiel" data-bind="spielId" data-rr>${opt(spOpts,t.spielId||"")}</select></label></div>
 
+  ${planKasten(t)}
   <section class="blk"><h3>Anwesenheit</h3>
    <div class="asum"><span data-s="ja"><b>${sum.ja}</b> anwesend</span><span data-s="nein"><b>${sum.nein}</b> abwesend</span><span data-s="lim"><b>${sum.lim}</b> eingeschränkt${sum.limDa?` <small>(${sum.limDa} davon da)</small>`:""}</span><span data-s=""><b>${sum.offen}</b> offen</span></div>
    <p class="legend" style="margin:6px 0 14px">Im Training: <b>${hc.F}</b> Feldspielerinnen + <b>${hc.T}</b> TW</p>
