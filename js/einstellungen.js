@@ -67,6 +67,7 @@ function vEinstellungen(){
   const vu=S.meta.vorUpdate;
   const cnt=tid=>({p:(S.kaders[tid]&&S.kaders[tid].players||[]).length,t:Object.values(S.trainings).filter(o=>o.team===tid).length,s:Object.values(S.spiele).filter(o=>o.team===tid).length});
   return `<div class="narrow"><h2 class="page-h">Einstellungen</h2>
+  ${syncBlock()}
   <section class="blk" id="mannschaften"><h3>Mannschaften <span class="sub">${S.teamsDoc.list.length}</span></h3>
     <p class="hint">Jede Mannschaft hat eigenen Kader, eigene Trainings, Spiele und Statistik. Übungen und alle Listen unten gelten für alle.</p>
     <div class="lsed">${S.teamsDoc.list.map((t,i)=>{const c=cnt(t.id);return `<div class="tmrow${t.id===S.team?" cur":""}">
@@ -89,7 +90,6 @@ function vEinstellungen(){
     <div class="addpt"><input class="inp" data-key="mtnew" data-act="mtNew" placeholder="Neues Material"><button class="btn" data-act="mtAdd">Hinzufügen</button></div></details>
     <div class="meta" style="margin-top:14px"><label class="f">Leibchen pro Satz<input type="number" min="0" data-key="inv-ps" data-set="leibchenProSatz" value="${esc(S.settings.leibchenProSatz??"")}"></label></div></section>
   ${listBlock("gruende")}${listBlock("positionen")}${listBlock("bewertungskriterien")}
-  ${syncBlock()}
   <section class="blk"><h3>Datensicherung <span class="sub">${S.meta.letzteSicherung?"zuletzt am "+esc(fmtStamp(S.meta.letzteSicherung)):"noch keine Sicherung"}</span></h3>
    <p class="hint">Deine Daten liegen auf diesem Gerät. Lade regelmäßig eine Sicherung herunter, z. B. nach jedem Spieltag. Mit derselben Datei bringst du die Daten auch auf ein anderes Gerät. Über „Einspielen“ kannst du auch geteilte Trainings und Übungen anderer Trainer übernehmen.</p>
    <div class="row-actions" style="margin-top:0"><button class="btn pri" data-act="backup">Alles sichern</button><button class="btn" data-act="backupTeam">Nur „${esc(teamName())}“ sichern</button>${canShareFiles()?'<button class="btn" data-act="backupShare">Alles teilen …</button>':""}<button class="btn" data-act="import">Datei einspielen</button></div>
