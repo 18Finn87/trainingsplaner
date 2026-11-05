@@ -55,7 +55,9 @@ const SB=(()=>{
   async function push(){
     const ent=Object.entries(state.pending);if(!ent.length)return 0;
     const docs=ent.map(([,p])=>{const o=p.deleted?null:docOf(p.coll,p.id);return {coll:p.coll,id:p.id,deleted:p.deleted||!o,updated_at:(o&&o.updatedAt)||p.t,data:o?clone(o):null};});
-    for(let i=0;i<docs.length;i+=200)await api("/rest/v1/rpc/push_docs",{method:"POST",body:JSON.stringify({p_team:state.team,p_docs:docs.slice(i,i+200)})});
+    // In Paketen hochladen: höchstens 100 Dokumente bzw. ca. 1,5 MB (Bilder in Übungen und Spielberichten)
+    let pack=[],size=0;const send=async()=>{if(pack.length)await api("/rest/v1/rpc/push_docs",{method:"POST",body:JSON.stringify({p_team:state.team,p_docs:pack})});pack=[];size=0;};
+    for(const d of docs){const n=JSON.stringify(d).length;if(pack.length&&(pack.length>=100||size+n>1.5e6))await send();pack.push(d);size+=n;}await send();
     ent.forEach(([k,p])=>{if(state.pending[k]&&state.pending[k].t===p.t)delete state.pending[k];});saveState();return docs.length;
   }
   async function pull(){

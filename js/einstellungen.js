@@ -22,6 +22,10 @@ const LISTEN={
     get:()=>S.settings.kategorien,
     uses:v=>{const n=Object.values(S.uebungen).filter(e=>e.kategorie===v).length;return {n,txt:`${n} Übung${n>1?"en":""}`};},
     apply:(v,neu)=>{Object.entries(S.uebungen).forEach(([id,e])=>{if(e.kategorie===v){e.kategorie=neu||"";saveLater("uebung",id);}});applySteps("kategorie",v,neu);}},
+  mannschaftsteile:{titel:"Mannschaftsteile",hint:"Für Beobachtungen in der Spielanalyse, z. B. Abwehr, Mittelfeld, Angriff, Torwart.",
+    get:()=>S.settings.mannschaftsteile=S.settings.mannschaftsteile||[],
+    uses:v=>{const n=Object.values(S.spiele).reduce((a,s)=>a+(s.punkte||[]).filter(p=>(p.teile||[]).includes(v)).length,0);return {n,txt:`${n} Beobachtung${n>1?"en":""}`};},
+    apply:(v,neu)=>Object.entries(S.spiele).forEach(([id,s])=>{let ch=false;(s.punkte||[]).forEach(p=>{if((p.teile||[]).includes(v)){p.teile=neu?[...new Set(p.teile.map(x=>x===v?neu:x))]:p.teile.filter(x=>x!==v);ch=true;}});if(ch)saveLater("spiel",id);})},
   bereiche:{titel:"Bereiche für Trainingsblöcke",hint:"Ordnen deine Blockvorlagen, z. B. Torwart, Aufwärmen, Passspiel.",
     get:()=>S.settings.bereiche=S.settings.bereiche||[],
     uses:v=>{const a=S.vorlagenDoc.list.filter(x=>x.bereich===v).length;const b=Object.values(S.trainings).reduce((n,t)=>n+Object.values(t.gruppen||{}).filter(g=>g.bereich===v).length,0);
@@ -71,7 +75,7 @@ function vEinstellungen(){
   <section class="blk"><h3>Saison</h3><p class="hint">Für die Zeiträume „Saison“ und „Halbserie“ in der Statistik.</p>
     <div class="meta"><label class="f">Saisonbeginn (TT.MM.)<input data-key="set-saison" data-act="mmdd" data-f="saisonStart" value="${esc(ddmm(S.settings.saisonStart||"07-01"))}" inputmode="numeric" placeholder="01.07."></label>
     <label class="f">Rückrunde ab (TT.MM.)<input data-key="set-wechsel" data-act="mmdd" data-f="halbserieWechsel" value="${esc(ddmm(S.settings.halbserieWechsel||"01-01"))}" inputmode="numeric" placeholder="01.01."></label></div></section>
-  ${listBlock("schwerpunkte")}${listBlock("tags")}${listBlock("kategorien")}${listBlock("bereiche")}
+  ${listBlock("schwerpunkte")}${listBlock("tags")}${listBlock("kategorien")}${listBlock("bereiche")}${listBlock("mannschaftsteile")}
   <section class="blk"><h3>Material und Bestand <span class="sub">${mat.length} Sorten</span></h3><p class="hint">Bezeichnung ändern, Bestand eintragen (leer = wird nicht geprüft), sortieren.</p>
     <details class="fold" data-dkey="set-material"${S.ui.open.dsetmaterial?" open":""}><summary>Material und Bestand bearbeiten</summary>
     <div class="lsed">${mat.map((m,i)=>`<div class="lsrow mat"><input class="inp" data-key="mt-${m.k}" data-act="mtRename" data-i="${i}" value="${esc(m.l)}" aria-label="Material: ${esc(m.l)}">

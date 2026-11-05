@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=9;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=10;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -221,6 +221,9 @@ const MIGRATIONS={
   /* 8 → 9: langfristige Planung je Mannschaft: planungen[team] = {perioden:[{id,name,von,bis,ziele:[{id,text,art}],soll:{schwerpunkt:prozent}}],
      wochen:[{id,von,text,haupt,neben}]}. Startet leer; bestehende Daten bleiben unverändert. */
   8:d=>Object.assign({},d,{planungen:Object.assign({},d.planungen||{})}),
+  /* 9 → 10: Spielanalyse. Neu: settings.mannschaftsteile; im Spiel medien [{id,typ,titel,data|url}]; je Punkt optional
+     haupt, teile, spielerinnen, medien. Bestehende Spielberichte bleiben unverändert. */
+  9:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});if(!Array.isArray(out.settings.mannschaftsteile))out.settings.mannschaftsteile=DEF_TEILE.slice();return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);
