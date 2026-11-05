@@ -29,10 +29,26 @@ const SB=(()=>{
     try{const r=await fetch(url("/auth/v1/token?grant_type=refresh_token"),{method:"POST",headers:{apikey:KONFIG.supabaseKey,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:st.session.refresh_token})});
       if(!r.ok){if(r.status===400||r.status===401){st.session=null;write(LS_SESSION,null);}return false;}setSession(await r.json());return true;}catch(e){return false;}
   }
-  /* Anmeldung per Code aus der E-Mail */
-  async function sendCode(email){await api("/auth/v1/otp",{method:"POST",body:JSON.stringify({email,create_user:true})},false);}
+  /* Anmeldung: Supabase schickt eine E-Mail mit Link (Standardvorlage) – mit eigener Vorlage auch mit Code.
+     Der Link führt zurück auf genau diese Seite; die Anmeldedaten stehen dann hinter # in der Adresse. */
+  const hierher=()=>location.origin+location.pathname;
+  async function sendCode(email){await api("/auth/v1/otp?redirect_to="+encodeURIComponent(hierher()),{method:"POST",body:JSON.stringify({email,create_user:true})},false);}
   async function verify(email,code){
     const j=await api("/auth/v1/verify",{method:"POST",body:JSON.stringify({type:"email",email,token:code.trim()})},false);setSession(j);
+    await nachAnmeldung();
+  }
+  async function vonLink(){
+    const h=new URLSearchParams(location.hash.slice(1));if(!h.get("access_token")&&!h.get("error_description"))return;
+    history.replaceState(null,"",hierher()+location.search);
+    if(h.get("error_description")){st.error="Anmelde-Link ungültig oder abgelaufen – bitte neuen anfordern. ("+h.get("error_description")+")";S.view="einstellungen";queueRender();return;}
+    try{setSession({access_token:h.get("access_token"),refresh_token:h.get("refresh_token"),expires_in:+h.get("expires_in")||3600});
+      const u=await api("/auth/v1/user");if(u&&u.email){st.session.email=u.email;write(LS_SESSION,st.session);}
+      for(let i=0;i<50&&!S.ready;i++)await new Promise(r=>setTimeout(r,200)); // warten, bis die Daten im Browser geladen sind
+      await nachAnmeldung();toast("Angemeldet");}
+    catch(e){st.error=e.message||"Anmeldung fehlgeschlagen";}
+    S.view="einstellungen";queueRender();
+  }
+  async function nachAnmeldung(){
     const m=await api("/rest/v1/mitglieder?select=team");
     if(!m||!m.length){await logout();throw new Error("Diese E-Mail ist noch für kein Team freigeschaltet. Trag sie in Supabase in die Tabelle „mitglieder“ ein.");}
     if(state.team!==m[0].team){state.team=m[0].team;state.lastPull=null;state.init=false;}st.team=state.team;saveState();
@@ -92,6 +108,10 @@ const SB=(()=>{
   async function firstSync(){
     const any=await api(`/rest/v1/docs?select=id&team=eq.${encodeURIComponent(state.team)}&limit=1`);
     const all=[];const now=Date.now();
+    /* Schutz: Ein leeres Gerät (keine Spielerinnen, Übungen, Trainings, Spiele) lädt nie seine leeren Grunddaten
+       in eine leere Datenbank – sonst würden sie später die echten Daten eines anderen Geräts überschreiben. */
+    const hatDaten=Object.values(S.kaders).some(k=>(k.players||[]).length)||["uebungen","trainings","spiele"].some(c=>Object.keys(S[c]).length);
+    if((!any||!any.length)&&!hatDaten){state.lastPull=null;saveState();return;}
     if(!any||!any.length){all.push(["meta","teams"],["meta","vorlagen"],["meta","settings"],...Object.keys(S.kaders).map(t=>["meta","kader:"+t]),...Object.keys(S.planungen).map(t=>["meta","planung:"+t]));}
     ["uebungen","trainings","spiele"].forEach(c=>Object.keys(S[c]).forEach(id=>all.push([c,id])));
     all.forEach(([c,id])=>{const o=docOf(c,id);if(!o)return;if(!o.updatedAt)o.updatedAt=now;state.pending[c+"/"+id]={coll:c,id,deleted:false,t:o.updatedAt};});
@@ -108,6 +128,7 @@ const SB=(()=>{
   window.addEventListener("online",()=>syncNow());
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncNow();});
   setInterval(()=>{if(document.visibilityState==="visible")syncNow();},60000);
+  if(cfgOk())vonLink();
   return {cfgOk,st,state,sendCode,verify,logout,mark,syncNow,pending:()=>Object.keys(state.pending).length};
 })();
 
@@ -116,11 +137,12 @@ function syncBlock(){
   if(!SB.cfgOk())return `<section class="blk"><h3>Gemeinsame Daten <span class="sub">nicht eingerichtet</span></h3><p class="hint">Sobald die Verbindung zur gemeinsamen Datenbank eingetragen ist, kannst du dich hier anmelden und die Daten mit deinen Co-Trainern teilen.</p></section>`;
   const s=SB.st;
   if(!s.session)return `<section class="blk"><h3>Gemeinsame Daten <span class="sub">nicht angemeldet</span></h3>
-    <p class="hint">Melde dich mit deiner E-Mail an. Du bekommst einen 6-stelligen Code. Nur freigeschaltete Trainer sehen die Daten.</p>
-    ${S.ui.sbCode?`<div class="meta"><label class="f">Code aus der E-Mail<input class="inp" id="sbCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label></div>
-      <div class="row-actions"><button class="btn pri" data-act="sbVerify">Anmelden</button><button class="btn ghost" data-act="sbBack">Andere E-Mail</button></div><p class="legend">Code gesendet an ${esc(S.ui.sbMail||"")}.</p>`
+    <p class="hint">Melde dich mit deiner E-Mail an. Du bekommst eine E-Mail mit einem Anmelde-Link. Nur freigeschaltete Trainer sehen die Daten.</p>
+    ${S.ui.sbCode?`<p class="hint"><b>E-Mail gesendet an ${esc(S.ui.sbMail||"")}.</b> Öffne sie <b>in diesem Browser</b> und tippe auf den Link („Sign in“) – die App öffnet sich dann angemeldet. Steht in der Mail stattdessen ein Code, gib ihn hier ein:</p>
+      <div class="meta"><label class="f">Code aus der E-Mail (falls vorhanden)<input class="inp" id="sbCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label></div>
+      <div class="row-actions"><button class="btn pri" data-act="sbVerify">Mit Code anmelden</button><button class="btn ghost" data-act="sbBack">Andere E-Mail / neu senden</button></div>`
     :`<div class="meta"><label class="f">E-Mail<input class="inp" id="sbMail" type="email" autocomplete="email" value="${esc(S.ui.sbMail||"")}" placeholder="name@beispiel.de"></label></div>
-      <div class="row-actions"><button class="btn pri" data-act="sbSend">Code senden</button></div>`}
+      <div class="row-actions"><button class="btn pri" data-act="sbSend">Anmelde-E-Mail senden</button></div>`}
     ${s.error?`<div class="warn">${esc(s.error)}</div>`:""}</section>`;
   const p=SB.pending();
   return `<section class="blk"><h3>Gemeinsame Daten <span class="sub">Team „${esc(SB.state.team||"")}“</span></h3>
