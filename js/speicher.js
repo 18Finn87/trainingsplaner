@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=10;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=11;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -224,6 +224,15 @@ const MIGRATIONS={
   /* 9 → 10: Spielanalyse. Neu: settings.mannschaftsteile; im Spiel medien [{id,typ,titel,data|url}]; je Punkt optional
      haupt, teile, spielerinnen, medien. Bestehende Spielberichte bleiben unverändert. */
   9:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});if(!Array.isArray(out.settings.mannschaftsteile))out.settings.mannschaftsteile=DEF_TEILE.slice();return out;},
+  /* 10 → 11: Spielerentwicklung. Neu: settings.bewertungskriterien; je Spielerin entwicklung =
+     {ziele:[],staerken:[],felder:[],empfehlungen:[],bewertungen:[]} (siehe js/entwicklung.js). Alle anderen Daten bleiben unverändert. */
+  10:d=>{const out=Object.assign({},d,{settings:Object.assign({},d.settings||{})});
+    if(!Array.isArray(out.settings.bewertungskriterien))out.settings.bewertungskriterien=DEF_KRIT.slice();
+    const leer=()=>({ziele:[],staerken:[],felder:[],empfehlungen:[],bewertungen:[]});
+    const pl=p=>Object.assign({},p,{entwicklung:Object.assign(leer(),p.entwicklung||{})});
+    if(out.kaders)out.kaders=Object.fromEntries(Object.entries(out.kaders).map(([t,k])=>[t,Object.assign({},k,{players:(k.players||[]).map(pl)})]));
+    if(out.kader)out.kader=Object.assign({},out.kader,{players:(out.kader.players||[]).map(pl)});
+    return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);

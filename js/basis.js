@@ -10,6 +10,7 @@ const DEF_POS=["Tor","Abwehr","Mittelfeld","Sturm"];
 const DEF_SCHWERPUNKTE=["Technik","Taktik","Athletik","Koordination","Torwart"];
 const DEF_TEILE=["Abwehr","Mittelfeld","Angriff","Torwart"];
 const DEF_BEREICHE=["Torwart","Aufwärmen","Technik","Passspiel","Torschuss","Spielformen","Athletik","Koordination"];
+const DEF_KRIT=["Technik","Taktik / Spielverständnis","Athletik","Einsatz / Mentalität","Teamverhalten"];
 const HAUPT_AUS_KAT=["Technik","Taktik","Athletik"]; // Kategorien, die bei der Umstellung eindeutig ein Schwerpunkt sind
 const matList=()=>(S.settings.material||[]).map(m=>[m.k,m.l]);
 const matLabel=k=>{const m=(S.settings.material||[]).find(x=>x.k===k);return m?m.l:k;};
@@ -27,7 +28,7 @@ const ARTN={plus:"Positiv",minus:"Negativ",info:"Hinweis"};
 /* ---------- state ---------- */
 const S={view:"training",ready:false,mode:"none",meta:{},persistent:false,team:null,teamsDoc:{list:[]},vorlagenDoc:{list:[]},kaders:{},planungen:{},settings:null,uebungen:{},trainings:{},spiele:{},
   sel:{training:null,uebung:null,spiel:null},ui:{open:{},q:"",tag:"",pickQ:"",pickTag:"",backTo:null},notice:""};
-function defaultSettings(){return {tags:DEFAULT_TAGS.slice(),schwerpunkte:DEF_SCHWERPUNKTE.slice(),bereiche:DEF_BEREICHE.slice(),mannschaftsteile:DEF_TEILE.slice(),kategorien:DEF_KAT.slice(),gruende:DEF_GRUENDE.slice(),positionen:DEF_POS.slice(),
+function defaultSettings(){return {tags:DEFAULT_TAGS.slice(),schwerpunkte:DEF_SCHWERPUNKTE.slice(),bereiche:DEF_BEREICHE.slice(),mannschaftsteile:DEF_TEILE.slice(),bewertungskriterien:DEF_KRIT.slice(),kategorien:DEF_KAT.slice(),gruende:DEF_GRUENDE.slice(),positionen:DEF_POS.slice(),
   material:DEF_MAT.map(([k,l])=>({k,l})),saisonStart:"07-01",halbserieWechsel:"01-01",inventar:{leibchen:3},leibchenProSatz:9,start:"19:00",dauer:90};}
 S.settings=defaultSettings();
 /* S.kader ist immer der Kader der gewählten Mannschaft. */

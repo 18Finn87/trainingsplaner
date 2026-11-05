@@ -28,18 +28,22 @@ function spielerinView(p){
   const erfassteSpiele=ofTeam("spiele").filter(([,s])=>Array.isArray(s.kader)&&s.kader.length).length;
   const statusTxt=t=>{const s=t.anwesenheit[p.id];const g=t.gruende&&t.gruende[p.id];const lim=t.einschr&&t.einschr[p.id];const ri=rausIdx(t,p.id);
     return [s==="ja"?"dabei":s==="nein"?`abwesend${g&&g.grund?" – "+g.grund:""}`:"nicht erfasst",lim?`eingeschränkt (${lim.grund})`:"",ri>=0?`raus ab ${exName(stepEx(t.ablauf[ri]))}`:""].filter(Boolean).join(" · ");};
-  return `<div class="narrow"><div class="ed-top"><button class="btn ghost" data-act="pBack">← Kader</button></div>
+  const tab=S.ui.pTab||"stamm";const e=ent(p);const offen=e.ziele.filter(x=>!x.erreicht).length;
+  const kopf=`<div class="narrow"><div class="ed-top"><button class="btn ghost" data-act="pBack">← Kader</button></div>
   <div class="ed-top"><input class="title-in" data-key="p-name" data-act="pF" data-f="name" data-id="${p.id}" value="${esc(p.name)}" aria-label="Name"></div>
-  <div class="meta"><label class="f">Rückennummer<input data-key="p-nr" data-act="pF" data-f="nummer" data-id="${p.id}" value="${esc(p.nummer||"")}" inputmode="numeric" maxlength="3"></label>
+  ${seg("pTab",tab,[["stamm","Stammdaten"],["entw",`Entwicklung${offen?` <span class="bd">${offen}</span>`:""}`],["hist","Historie"]]," ptabs")}`;
+  if(tab==="entw")return kopf+entwicklungTab(p)+"</div>";
+  if(tab==="hist")return kopf+histHtml()+"</div>";
+  function histHtml(){return `<section class="blk"><h3>Trainingshistorie <span class="sub">${da} von ${trs.length} durchgeführten Trainings · ${fmtMin(minAll)}</span></h3>
+   ${trs.length?`<ul class="hist">${trs.map(([id,t])=>`<li><button type="button" class="plink" data-act="pTr" data-id="${id}"><b>${esc(fmtDate(t.datum))}</b>${t.thema?` <span class="src">${esc(t.thema)}</span>`:""}</button><span class="${t.anwesenheit[p.id]==="ja"?"ok":"src"}">${esc(statusTxt(t))}</span><em>${t.anwesenheit[p.id]==="ja"?fmtMin(total(playerParts(t,p.id,"ist"))):""}</em></li>`).join("")}</ul>`:'<p class="hint">Noch keine durchgeführten Trainings.</p>'}</section>
+  <section class="blk"><h3>Spielhistorie <span class="sub">${spiele.length} Spiel${spiele.length===1?"":"e"} im Kader${erfassteSpiele?` von ${erfassteSpiele} erfassten`:""}</span></h3>
+   ${spiele.length?`<ul class="hist">${spiele.map(([id,s])=>`<li><button type="button" class="plink" data-act="pSp" data-id="${id}"><b>${esc(fmtDate(s.datum))}</b> <span class="src">${esc(s.gegner||"Gegner offen")}</span></button><span>${esc(s.ergebnis||"")}</span><em>${esc(s.wettbewerb||"")}</em></li>`).join("")}</ul>`:'<p class="hint">Noch in keinem Spielkader. Den Spielkader wählst du im Spielbericht aus.</p>'}</section>`;}
+  return kopf+`<div class="meta"><label class="f">Rückennummer<input data-key="p-nr" data-act="pF" data-f="nummer" data-id="${p.id}" value="${esc(p.nummer||"")}" inputmode="numeric" maxlength="3"></label>
    <label class="f">Hauptposition<select data-key="p-pos" data-act="pF" data-f="position" data-id="${p.id}">${opt([["","–"],...pos.map(x=>[x,x]),...(p.position&&!pos.includes(p.position)?[[p.position,p.position]]:[])],p.position||"")}</select></label>
    <label class="f">Torhüterin<button type="button" class="chip tag twbtn" style="align-self:flex-start;min-height:40px" data-act="pTw" data-id="${p.id}" aria-pressed="${!!p.tw}">${p.tw?"Ja – TW":"Nein"}</button></label></div>
   <section class="blk"><h3>Weitere bevorzugte Positionen</h3><div class="chips">${pos.filter(x=>x!==p.position).map(x=>`<button type="button" class="chip tag" data-act="pPosT" data-id="${p.id}" data-v="${esc(x)}" aria-pressed="${weitere.includes(x)}">${esc(x)}</button>`).join("")||'<p class="hint">Positionen pflegst du in den Einstellungen.</p>'}</div></section>
   <section class="blk"><h3>Notiz</h3><textarea class="inp" style="width:100%" rows="3" data-key="p-notiz" data-act="pF" data-f="notiz" data-id="${p.id}" placeholder="z. B. starker linker Fuß, spielt lieber halbrechts">${esc(p.notiz||"")}</textarea></section>
   <section class="blk"><h3>Belastung</h3><p class="hint" style="margin:0 0 10px">${p.einschr?esc(einschrTxt(p.einschr)):"Voll belastbar"}</p><button class="btn sm${p.einschr?" pri":""}" data-act="pLim" data-id="${p.id}">${p.einschr?"Einschränkung ändern":"Als eingeschränkt markieren"}</button></section>
-  <section class="blk"><h3>Trainingshistorie <span class="sub">${da} von ${trs.length} durchgeführten Trainings · ${fmtMin(minAll)}</span></h3>
-   ${trs.length?`<ul class="hist">${trs.map(([id,t])=>`<li><button type="button" class="plink" data-act="pTr" data-id="${id}"><b>${esc(fmtDate(t.datum))}</b>${t.thema?` <span class="src">${esc(t.thema)}</span>`:""}</button><span class="${t.anwesenheit[p.id]==="ja"?"ok":"src"}">${esc(statusTxt(t))}</span><em>${t.anwesenheit[p.id]==="ja"?fmtMin(total(playerParts(t,p.id,"ist"))):""}</em></li>`).join("")}</ul>`:'<p class="hint">Noch keine durchgeführten Trainings.</p>'}</section>
-  <section class="blk"><h3>Spielhistorie <span class="sub">${spiele.length} Spiel${spiele.length===1?"":"e"} im Kader${erfassteSpiele?` von ${erfassteSpiele} erfassten`:""}</span></h3>
-   ${spiele.length?`<ul class="hist">${spiele.map(([id,s])=>`<li><button type="button" class="plink" data-act="pSp" data-id="${id}"><b>${esc(fmtDate(s.datum))}</b> <span class="src">${esc(s.gegner||"Gegner offen")}</span></button><span>${esc(s.ergebnis||"")}</span><em>${esc(s.wettbewerb||"")}</em></li>`).join("")}</ul>`:'<p class="hint">Noch in keinem Spielkader. Den Spielkader wählst du im Spielbericht aus.</p>'}</section>
   <div class="row-actions"><button class="btn ghost danger" data-act="pDel" data-id="${p.id}">Aus dem Kader entfernen</button></div></div>`;
 }
 
@@ -68,7 +72,7 @@ $("#overlay").addEventListener("click",e=>{
 });
 $("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act,p=pById(el.dataset.id);
   if(a==="pLim")openEinschr(el.dataset.id,null);
-  if(a==="pOpen"){S.sel.spielerin=el.dataset.id;render();window.scrollTo(0,0);}
+  if(a==="pOpen"){S.sel.spielerin=el.dataset.id;S.ui.pTab="stamm";render();window.scrollTo(0,0);}
   if(a==="pBack"){S.sel.spielerin=null;render();}
   if(a==="pPosT"&&p){const v=el.dataset.v;p.positionen=(p.positionen||[]).includes(v)?p.positionen.filter(x=>x!==v):[...(p.positionen||[]),v];saveLater("kader");render();}
   if(a==="pTr"){S.view="training";S.sel.training=el.dataset.id;render();window.scrollTo(0,0);}

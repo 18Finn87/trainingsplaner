@@ -46,6 +46,11 @@ const LISTEN={
       if(p.position===v){p.position=neu||"";ch=true;}
       if((p.positionen||[]).includes(v)){p.positionen=neu?[...new Set(p.positionen.map(x=>x===v?neu:x))].filter(x=>x!==p.position):p.positionen.filter(x=>x!==v);ch=true;}});
       if(ch)saveLater("kader",tid);})},
+  bewertungskriterien:{titel:"Kriterien für die Spielerinnen-Bewertung",hint:"Werden gelegentlich mit 1–5 bewertet (Kader → Spielerin → Entwicklung). Beim Umbenennen wandern alte Bewertungen mit; beim Löschen bleiben alte Werte gespeichert.",
+    get:()=>S.settings.bewertungskriterien=S.settings.bewertungskriterien||DEF_KRIT.slice(),
+    uses:v=>{const n=Object.values(S.kaders).flatMap(k=>k.players||[]).reduce((a,p)=>a+((p.entwicklung&&p.entwicklung.bewertungen)||[]).filter(b=>b.werte&&v in b.werte).length,0);return {n,txt:`${n} Bewertung${n===1?"":"en"}`};},
+    apply:(v,neu)=>neu&&Object.entries(S.kaders).forEach(([tid,k])=>{let ch=false;(k.players||[]).forEach(p=>((p.entwicklung&&p.entwicklung.bewertungen)||[]).forEach(b=>{
+      if(b.werte&&v in b.werte){if(neu&&!(neu in b.werte))b.werte[neu]=b.werte[v];delete b.werte[v];ch=true;}}));if(ch)saveLater("kader",tid);})},
 };
 /* Material: Kennung (k) bleibt fest, nur die Bezeichnung (l) ist frei – Übungen speichern die Kennung. */
 const matUses=k=>{const n=Object.values(S.uebungen).filter(e=>num(e.material&&e.material[k])>0).length;return {n,txt:`${n} Übung${n>1?"en":""}`};};
@@ -83,7 +88,7 @@ function vEinstellungen(){
       <span class="ctl"><button class="iconbtn" data-act="mtUp" data-i="${i}" aria-label="Nach oben"${i?"":" disabled"}>↑</button><button class="iconbtn" data-act="mtDown" data-i="${i}" aria-label="Nach unten"${i<mat.length-1?"":" disabled"}>↓</button><button class="iconbtn" data-act="mtDel" data-i="${i}" aria-label="${esc(m.l)} löschen">✕</button></span></div>`).join("")}</div>
     <div class="addpt"><input class="inp" data-key="mtnew" data-act="mtNew" placeholder="Neues Material"><button class="btn" data-act="mtAdd">Hinzufügen</button></div></details>
     <div class="meta" style="margin-top:14px"><label class="f">Leibchen pro Satz<input type="number" min="0" data-key="inv-ps" data-set="leibchenProSatz" value="${esc(S.settings.leibchenProSatz??"")}"></label></div></section>
-  ${listBlock("gruende")}${listBlock("positionen")}
+  ${listBlock("gruende")}${listBlock("positionen")}${listBlock("bewertungskriterien")}
   ${syncBlock()}
   <section class="blk"><h3>Datensicherung <span class="sub">${S.meta.letzteSicherung?"zuletzt am "+esc(fmtStamp(S.meta.letzteSicherung)):"noch keine Sicherung"}</span></h3>
    <p class="hint">Deine Daten liegen auf diesem Gerät. Lade regelmäßig eine Sicherung herunter, z. B. nach jedem Spieltag. Mit derselben Datei bringst du die Daten auch auf ein anderes Gerät. Über „Einspielen“ kannst du auch geteilte Trainings und Übungen anderer Trainer übernehmen.</p>
