@@ -139,3 +139,15 @@ do $$ begin
     perform vault.create_secret(encode(extensions.gen_random_bytes(32), 'hex'), 'push_cron', 'Zeitsteuerung Push-Erinnerungen');
   end if;
 end $$;
+
+-- 6) Zeitsteuerung – ERST ausführen, wenn der Versand-Baustein „push“ angelegt ist
+--    (Edge Functions → „push“, Code aus supabase/functions/push/index.ts, „Verify JWT“ aus).
+--    Ruft den Baustein stündlich auf; das Geheimwort kommt direkt aus dem Tresor.
+select cron.unschedule(jobid) from cron.job where jobname = 'push-erinnerungen';
+select cron.schedule('push-erinnerungen', '0 * * * *', $job$
+  select net.http_post(
+    url := 'https://rijfdkentuchjrfuzqrp.supabase.co/functions/v1/push',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron', (select decrypted_secret from vault.decrypted_secrets where name = 'push_cron')),
+    body := '{"aktion":"cron"}'::jsonb,
+    timeout_milliseconds := 30000);
+$job$);

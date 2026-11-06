@@ -11,7 +11,13 @@
 import * as webpush from "jsr:@negrel/webpush@0.5.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+// Schlüssel mit vollen Rechten stellt Supabase automatisch bereit (alter oder neuer Name)
+function dienstSchluessel(): string {
+  const alt = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (alt) return alt;
+  try { const neu = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}"); return neu.default ?? Object.values(neu)[0] as string; } catch { return ""; }
+}
+const db = createClient(Deno.env.get("SUPABASE_URL")!, dienstSchluessel(), { auth: { persistSession: false } });
 const APP_URL = "https://18finn87.github.io/trainingsplaner/";
 const CORS = {
   "Access-Control-Allow-Origin": "*",
