@@ -5,7 +5,7 @@
 const CACHE="trainingsplaner-v13";
 const FILES=["./","index.html","css/app.css","manifest.webmanifest",
   "js/basis.js","js/speicher.js","js/berechnung.js","js/tafel.js","js/ansicht.js",
-  "js/training.js","js/uebungen.js","js/spiele.js","js/kader.js","js/einstellungen.js","js/statistik.js","js/planung.js","js/spielanalyse.js","js/teilen.js","js/konfig.js","js/sync.js","js/bloecke.js","js/entwicklung.js","js/freigaben.js","js/app.js",
+  "js/training.js","js/uebungen.js","js/spiele.js","js/kader.js","js/einstellungen.js","js/statistik.js","js/planung.js","js/spielanalyse.js","js/teilen.js","js/konfig.js","js/sync.js","js/bloecke.js","js/entwicklung.js","js/freigaben.js","js/spielerin.js","js/app.js",
   "icons/icon.svg","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png"];
 const FONTS=["fonts.googleapis.com","fonts.gstatic.com"];
 

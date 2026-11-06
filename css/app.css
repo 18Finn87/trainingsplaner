@@ -655,3 +655,11 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer}
 .fgfazit p{margin:4px 0 0;white-space:pre-wrap}
 .chip.tag[disabled]{opacity:.45;cursor:not-allowed}
 @media (max-width:640px){.fgemp li{grid-template-columns:1fr}}
+/* Spielerinnen-Ansicht und Anmelde-Seite: nur Kopfzeile mit Farbmodus */
+body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus #status{display:none!important}
+@media (max-width:760px){body.sp-modus main{padding-bottom:32px}}
+.spitem{border:1px solid var(--line);border-radius:12px}
+.spreakt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.spreakt .btn{min-height:52px;white-space:normal;line-height:1.2}
+.spkom{border-left:3px solid var(--accent)}
+@media (max-width:420px){.spreakt{grid-template-columns:1fr}}

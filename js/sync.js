@@ -49,16 +49,25 @@ const SB=(()=>{
     S.view="einstellungen";queueRender();
   }
   async function nachAnmeldung(){
+    /* Trainer (Tabelle mitglieder) gleichen alle Daten ab. Spielerinnen (Tabelle zugaenge) bekommen nur ihre
+       Freigaben – ihr Gerät lädt nie Trainerdaten hoch oder herunter. */
     const m=await api("/rest/v1/mitglieder?select=team");
-    if(!m||!m.length){await logout();throw new Error("Diese E-Mail ist noch für kein Team freigeschaltet. Trag sie in Supabase in die Tabelle „mitglieder“ ein.");}
-    if(state.team!==m[0].team){state.team=m[0].team;state.lastPull=null;state.init=false;}st.team=state.team;saveState();
-    await syncNow(true);
+    if(m&&m.length){
+      if(state.rolle==="spielerin"||state.team!==m[0].team){state.team=m[0].team;state.lastPull=null;state.init=false;}
+      state.rolle="trainer";delete state.spielerin;st.team=state.team;saveState();
+      await syncNow(true);return;
+    }
+    const z=await api("/rest/v1/zugaenge?select=team,spielerin_id,name");
+    if(z&&z.length){state.rolle="spielerin";state.team=z[0].team;state.spielerin={id:z[0].spielerin_id,name:z[0].name||""};state.pending={};st.team=state.team;saveState();queueRender();return;}
+    await logout();throw new Error("Diese E-Mail ist noch nicht freigeschaltet. Bitte wende dich an dein Trainerteam.");
   }
-  async function logout(){try{if(st.session)await api("/auth/v1/logout",{method:"POST"});}catch(e){}st.session=null;write(LS_SESSION,null);queueRender();}
+  async function logout(){try{if(st.session)await api("/auth/v1/logout",{method:"POST"});}catch(e){}st.session=null;write(LS_SESSION,null);
+    if(state.rolle==="spielerin"){state.rolle=null;state.spielerin=null;state.team=null;st.team=null;saveState();}queueRender();}
+  const istSpielerin=()=>!!st.session&&state.rolle==="spielerin";
 
   /* Lokale Änderungen vormerken (aus speicher.js aufgerufen) */
   function mark(kind,id,deleted){
-    if(!cfgOk()||!state.team)return;const [coll,key]=locate(kind,id);
+    if(!cfgOk()||!state.team||state.rolle==="spielerin")return;const [coll,key]=locate(kind,id);
     state.pending[coll+"/"+key]={coll,id:key,deleted:!!deleted,t:Date.now()};saveState();later();
   }
   let tm=null;const later=()=>{clearTimeout(tm);tm=setTimeout(()=>syncNow(),2000);};
@@ -118,7 +127,7 @@ const SB=(()=>{
     state.init=true;saveState();
   }
   async function syncNow(force){
-    if(!cfgOk()||!st.session||!state.team||st.busy||!S.ready||S.mode==="none")return;
+    if(!cfgOk()||!st.session||!state.team||st.busy||!S.ready||S.mode==="none"||state.rolle==="spielerin")return;
     if(!navigator.onLine){st.online=false;setStatus("Offline – Abgleich folgt");return;}
     st.busy=true;st.error="";
     try{if(!state.init)await firstSync();await push();await pull();await push();st.last=Date.now();st.online=true;setStatus("Abgeglichen");}
@@ -129,17 +138,17 @@ const SB=(()=>{
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncNow();});
   setInterval(()=>{if(document.visibilityState==="visible")syncNow();},60000);
   if(cfgOk())vonLink();
-  return {cfgOk,st,state,sendCode,verify,logout,mark,syncNow,api,pending:()=>Object.keys(state.pending).length};
+  return {cfgOk,st,state,sendCode,verify,logout,mark,syncNow,api,istSpielerin,pending:()=>Object.keys(state.pending).length};
 })();
 
 /* Bereich in den Einstellungen */
-function syncBlock(){
+function syncBlock(titel){
   if(!SB.cfgOk())return `<section class="blk"><h3>Gemeinsame Daten <span class="sub">nicht eingerichtet</span></h3><p class="hint">Sobald die Verbindung zur gemeinsamen Datenbank eingetragen ist, kannst du dich hier anmelden und die Daten mit deinen Co-Trainern teilen.</p></section>`;
   const s=SB.st;
-  if(!s.session)return `<section class="blk"><h3>Gemeinsame Daten <span class="sub">nicht angemeldet</span></h3>
-    <p class="hint">Melde dich mit deiner E-Mail an. Du bekommst eine E-Mail mit einem Anmelde-Link. Nur freigeschaltete Trainer sehen die Daten.</p>
-    ${S.ui.sbCode?`<p class="hint"><b>E-Mail gesendet an ${esc(S.ui.sbMail||"")}.</b> Öffne sie <b>in diesem Browser</b> und tippe auf den Link („Sign in“) – die App öffnet sich dann angemeldet. Steht in der Mail stattdessen ein Code, gib ihn hier ein:</p>
-      <div class="meta"><label class="f">Code aus der E-Mail (falls vorhanden)<input class="inp" id="sbCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label></div>
+  if(!s.session)return `<section class="blk"><h3>${esc(titel||"Gemeinsame Daten")} <span class="sub">nicht angemeldet</span></h3>
+    <p class="hint">Melde dich mit deiner E-Mail an. Du bekommst eine E-Mail mit Code und Link. Trainer sehen danach die gemeinsamen Daten, Spielerinnen nur ihre Freigaben.</p>
+    ${S.ui.sbCode?`<p class="hint"><b>E-Mail gesendet an ${esc(S.ui.sbMail||"")}.</b> Gib den Code aus der Mail hier ein. (Schau notfalls im Spam-Ordner nach.)</p>
+      <div class="meta"><label class="f">Code aus der E-Mail<input class="inp" id="sbCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label></div>
       <div class="row-actions"><button class="btn pri" data-act="sbVerify">Mit Code anmelden</button><button class="btn ghost" data-act="sbBack">Andere E-Mail / neu senden</button></div>`
     :`<div class="meta"><label class="f">E-Mail<input class="inp" id="sbMail" type="email" autocomplete="email" value="${esc(S.ui.sbMail||"")}" placeholder="name@beispiel.de"></label></div>
       <div class="row-actions"><button class="btn pri" data-act="sbSend">Anmelde-E-Mail senden</button></div>`}

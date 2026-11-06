@@ -8,7 +8,7 @@
 const FG={list:[],zug:[],t:0,loading:false,err:""};
 const REAKT={verstanden:"👍 Verstanden",unsicher:"🤔 War mir unsicher",gut:"✅ Hat gut funktioniert",besprechen:"💬 Möchte ich besprechen"};
 const FGART={analyse:"Analyse",beobachtung:"Beobachtung",bild:"Screenshot",clip:"Videoclip",kommentar:"Kommentar"};
-const fgBereit=()=>SB.cfgOk()&&!!SB.st.session&&!!SB.state.team;
+const fgBereit=()=>SB.cfgOk()&&!!SB.st.session&&!!SB.state.team&&!SB.istSpielerin();
 const fgTeam=()=>encodeURIComponent(SB.state.team);
 /* Spielerin in allen Mannschaften suchen (Zugänge gelten für das ganze Supabase-Team) */
 const pAlle=id=>Object.values(S.kaders).flatMap(k=>k.players||[]).find(p=>p.id===id);

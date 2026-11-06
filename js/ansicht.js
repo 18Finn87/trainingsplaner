@@ -9,12 +9,28 @@ function render(){
   const scrollY=window.scrollY;
   if(!S.ready){app.innerHTML='<p class="hint">Daten werden geladen …</p>';return;}
   if(S.fatal){app.innerHTML=`<div class="notice">${esc(S.fatal)}</div>`;return;}
+  /* Spielerin angemeldet: nur ihre Freigaben. Leeres Gerät ohne Anmeldung: zuerst die Anmelde-Seite. */
+  const spMode=typeof SB!=="undefined"&&SB.istSpielerin();document.body.classList.toggle("sp-modus",spMode);
+  if(spMode){app.innerHTML=vSpielerin();if(fk){const el=app.querySelector(`[data-key="${CSS.escape(fk)}"]`);if(el){el.focus({preventScroll:true});try{if(ss!=null)el.setSelectionRange(ss,se);}catch(e){}}}window.scrollTo(0,scrollY);return;}
+  if(zeigeAnmeldung()){document.body.classList.add("sp-modus");app.innerHTML=vAnmelden();window.scrollTo(0,scrollY);return;}
   const notice=(S.notice?`<div class="notice">${esc(S.notice)}</div>`:"")+backupReminder();
   app.innerHTML=notice+({training:vTraining,uebungen:vUebungen,spiele:vSpiele,kader:vKader,statistik:vStatistik,planung:vPlanung,einstellungen:vEinstellungen}[S.view]||vTraining)();
   mountBoards();
   if(fk){const el=app.querySelector(`[data-key="${CSS.escape(fk)}"]`);if(el){el.focus({preventScroll:true});try{if(ss!=null)el.setSelectionRange(ss,se);}catch(e){}}}
   window.scrollTo(0,scrollY);
 }
+/* Anmelde-Seite: nur auf einem Gerät ohne eigene Daten, solange niemand angemeldet ist
+   (z. B. Handy einer Spielerin oder neues Trainer-Gerät). „Ohne Anmeldung“ merkt sich das Gerät. */
+function geraetLeer(){return !Object.values(S.kaders).some(k=>(k.players||[]).length)&&!["trainings","uebungen","spiele"].some(c=>Object.keys(S[c]).length);}
+function zeigeAnmeldung(){if(typeof SB==="undefined"||!SB.cfgOk()||SB.st.session||!geraetLeer())return false;
+  try{if(localStorage.getItem("tp-ohne-anmeldung"))return false;}catch(e){}return true;}
+function vAnmelden(){
+  return `<div class="narrow"><h2 class="page-h">Willkommen</h2>
+    <p class="hint">Beim Trainingsplaner Oedheim meldest du dich mit deiner E-Mail an – Spielerinnen sehen danach, was ihr Trainerteam für sie freigegeben hat.</p>
+    ${syncBlock("Anmelden")}
+    <div class="row-actions"><button class="btn ghost" data-act="ohneAnmeldung">Ohne Anmeldung starten (nur für Trainer)</button></div></div>`;
+}
+document.addEventListener("click",e=>{const el=e.target.closest('[data-act="ohneAnmeldung"]');if(!el)return;try{localStorage.setItem("tp-ohne-anmeldung","1");}catch(err){}S.ui.ohneAnmeldung=true;render();});
 /* Erinnerung, wenn die letzte Sicherung länger als 14 Tage her ist. */
 function backupReminder(){
   if(S.view==="kader"||S.ui.reminderHidden)return "";
