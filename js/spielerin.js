@@ -72,6 +72,7 @@ function vSpielerin(){
         <span class="src">${esc(FGART[f.art]||"")} · ${esc(fmtStamp(Date.parse(f.erstellt_am)))}</span>${r&&r.art?`<span class="fgstat">${esc(REAKT[r.art])}</span>`:""}</button>`;}).join("")}</div>`
       :'<div class="empty" style="margin-top:12px"><h3>Noch nichts für dich da</h3><p>Sobald dein Trainerteam dir eine Analyse, einen Clip oder einen Kommentar freigibt, erscheint er hier.</p></div>'}
     ${fbMeine()}
+    ${pushSpielerinBlock()}
     ${fuss}</div>`;
 }
 

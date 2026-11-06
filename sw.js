@@ -2,10 +2,10 @@
    Deine Daten liegen NICHT hier, sondern in der Datenbank des Browsers (IndexedDB).
    Strategie: erst beim Server fragen (damit Updates sofort ankommen); antwortet er nicht
    innerhalb von 3 Sekunden oder gibt es kein Netz, kommt die gespeicherte Version. */
-const CACHE="trainingsplaner-v14";
+const CACHE="trainingsplaner-v15";
 const FILES=["./","index.html","css/app.css","manifest.webmanifest",
   "js/basis.js","js/speicher.js","js/berechnung.js","js/tafel.js","js/ansicht.js",
-  "js/training.js","js/uebungen.js","js/spiele.js","js/kader.js","js/einstellungen.js","js/statistik.js","js/planung.js","js/spielanalyse.js","js/teilen.js","js/konfig.js","js/sync.js","js/bloecke.js","js/entwicklung.js","js/freigaben.js","js/spielerin.js","js/feedback.js","js/app.js",
+  "js/training.js","js/uebungen.js","js/spiele.js","js/kader.js","js/einstellungen.js","js/statistik.js","js/planung.js","js/spielanalyse.js","js/teilen.js","js/konfig.js","js/sync.js","js/bloecke.js","js/entwicklung.js","js/freigaben.js","js/spielerin.js","js/feedback.js","js/push.js","js/app.js",
   "icons/icon.svg","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png"];
 const FONTS=["fonts.googleapis.com","fonts.gstatic.com"];
 
@@ -34,4 +34,17 @@ self.addEventListener("fetch",e=>{
     const hit=await c.match(key,{ignoreSearch:true});if(hit){e.waitUntil(net);return hit;}
     return (await net)||new Response("Offline und noch nicht zwischengespeichert.",{status:503,headers:{"Content-Type":"text/plain; charset=utf-8"}});
   }));
+});
+
+/* Push-Erinnerungen: Nachricht anzeigen; Antippen öffnet die App (oder holt sie nach vorne). */
+self.addEventListener("push",e=>{
+  let d={};try{d=e.data?e.data.json():{};}catch(err){d={body:e.data&&e.data.text()};}
+  e.waitUntil(self.registration.showNotification(d.title||"Trainingsplaner Oedheim",{
+    body:d.body||"",tag:d.tag||"trainingsplaner",renotify:!!d.tag,icon:"icons/icon-192.png",badge:"icons/icon-192.png",data:{url:d.url||"./"}}));
+});
+self.addEventListener("notificationclick",e=>{
+  e.notification.close();const ziel=new URL((e.notification.data&&e.notification.data.url)||"./",self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(cs=>{
+    const c=cs.find(x=>x.url.startsWith(self.registration.scope));if(c){c.postMessage({push:"geoeffnet"});return c.focus();}
+    return self.clients.openWindow(ziel);}));
 });

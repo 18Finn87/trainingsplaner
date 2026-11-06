@@ -103,12 +103,14 @@ async function fgSenden(btn){
   btn.disabled=true;
   try{
     let id=d.id;
+    const neuAngelegt=!id;
     if(!id){const r=await SB.api("/rest/v1/freigaben",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({team:SB.state.team,art:d.art,titel:d.titel,text:d.text,inhalt:inhalt||{},quelle})});id=r[0].id;}
     else{const upd={titel:d.titel,text:d.text,geaendert_am:new Date().toISOString()};if(d.neuKopie&&inhalt){upd.inhalt=inhalt;upd.quelle=quelle;}
       await SB.api(`/rest/v1/freigaben?id=eq.${id}`,{method:"PATCH",body:JSON.stringify(upd)});}
     const alt=d.altEmpf||[];const weg=alt.filter(x=>!d.empf.includes(x)),neu=d.empf.filter(x=>!alt.includes(x));
     if(weg.length)await SB.api(`/rest/v1/freigabe_empfaenger?freigabe_id=eq.${id}&spielerin_id=in.(${weg.map(encodeURIComponent).join(",")})`,{method:"DELETE"});
     if(neu.length)await SB.api("/rest/v1/freigabe_empfaenger",{method:"POST",body:JSON.stringify(neu.map(pid=>({freigabe_id:id,team:SB.state.team,spielerin_id:pid})))});
+    if(neuAngelegt)pushFreigabe(id);
     S.ui.fgD=null;$("#overlay").innerHTML="";toast(d.id?"Freigabe geändert":`Freigegeben an ${d.empf.length} Spielerin${d.empf.length>1?"nen":""}`);await fgLaden(true);
   }catch(e){btn.disabled=false;toast("Nicht gespeichert: "+(e.message||"Fehler"));}
 }
@@ -165,7 +167,8 @@ function fgUebersicht(){
    <h2 class="page-h" style="margin-top:0">Freigaben</h2>
    <p class="hint">Alles, was du Spielerinnen freigegeben hast: wer es geöffnet hat und wie sie reagiert haben. Freigeben kannst du im Spielbericht (Beobachtung → Details, Screenshots, „Analyse freigeben“) und bei der Spielerin.</p>
    <div class="row-actions" style="margin-top:0"><button class="btn sm" data-act="fgReload">Aktualisieren</button></div>
-   ${fgListe(null,"Noch keine Freigaben.")}`;
+   ${fgListe(null,"Noch keine Freigaben.")}
+   ${pushTrainerBlock()}`;
 }
 /* Freigaben-Bereich in einem Spielbericht */
 function fgSpielBlock(sid){
@@ -176,7 +179,7 @@ function fgSpielBlock(sid){
 /* Reiter „Freigaben“ bei der Spielerin */
 function fgSpielerinTab(p){
   fgNach();const n=FG.list.filter(f=>f.freigabe_empfaenger.some(e=>e.spielerin_id===p.id)).length;
-  return zugangBlock(p)+(fgHinweis()?"":`<section class="blk"><h3>Freigaben an ${esc(p.name)} <span class="sub">${n}</span></h3>
+  return zugangBlock(p)+(zugVon(p.id)?pushSpielerinZeile(p):"")+(fgHinweis()?"":`<section class="blk"><h3>Freigaben an ${esc(p.name)} <span class="sub">${n}</span></h3>
     ${fgListe(f=>f.freigabe_empfaenger.some(e=>e.spielerin_id===p.id),"Noch nichts an sie freigegeben.")}
     <div class="row-actions"><button class="btn sm pri" data-act="fgKommentar" data-id="${p.id}"${hatZugang(p.id)?"":" disabled"}>Kommentar an ${esc(p.name)} freigeben</button></div>
     ${hatZugang(p.id)?"":'<p class="legend">Zum Freigeben braucht sie zuerst einen aktiven Zugang.</p>'}</section>`+fbSpielerinBlock(p));

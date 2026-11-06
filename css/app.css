@@ -671,3 +671,7 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .fbi .seg{margin-top:4px}
 .fbmeine{margin-top:18px}
 .fbl li{grid-template-columns:minmax(0,1fr) auto}
+/* ---------- Phase 8c: Benachrichtigungen ---------- */
+.cbrow{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
+.cbrow input{width:22px;height:22px;flex:none}
+.fbh{font:600 13px var(--head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 4px}
