@@ -34,6 +34,7 @@ function spielEditor(id){
    <label class="f">Ergebnis<input data-key="s-erg" data-bind="ergebnis" value="${esc(s.ergebnis||"")}" placeholder="z. B. 2:1"></label>
    <label class="f">Wettbewerb<input data-key="s-wb" data-bind="wettbewerb" value="${esc(s.wettbewerb||"")}" placeholder="Liga, Pokal …"></label></div>
   ${spielKader(id,s)}
+  ${aufstellungBlock(id,s)}
   <p class="hint">Kreis antippen wechselt zwischen negativ (−), positiv (+) und Hinweis (•). „Trainieren“ schickt den Punkt in die Trainingsplanung.</p>
   ${medienBlock(id,s)}
   ${half(1)}${half(2)}

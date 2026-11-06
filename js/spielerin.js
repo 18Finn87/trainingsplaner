@@ -64,19 +64,21 @@ function vSpielerin(){
         <div class="row-actions"><button class="btn pri" data-act="spKomSenden">Kommentar senden</button></div>
         ${r.am?`<p class="legend">Zuletzt gespeichert ${esc(fmtStamp(Date.parse(r.am)))}. Du kannst deine Rückmeldung jederzeit ändern.</p>`:""}</section></div>`;}
   const neu=SP.list.filter(f=>!SP.gel[f.id]).length;
-  return `<div class="narrow sp">${kopf}<p class="hint">Hier siehst du, was dein Trainerteam für dich freigegeben hat.${neu?` <b>${neu} neu.</b>`:""}</p>
-    <div class="row-actions" style="margin-top:0">${fbSpielerinKnopf()}<button class="btn sm" data-act="spReload">Aktualisieren</button></div>
-    ${S.ui.fbOffen?fbForm():""}
+  /* Reiter: Termine · Neues · Analysen · Mehr (Phase 9) */
+  const tab=S.ui.spTab||"termine";const nNeu=typeof spNeuAnzahl==="function"?spNeuAnzahl():0;
+  const reiter=seg("spTab",tab,[["termine","Termine"],["neues",`Neues${nNeu?` <span class="bd warnbd">${nNeu}</span>`:""}`],["analysen",`Analysen${neu?` <span class="bd warnbd">${neu}</span>`:""}`],["mehr","Mehr"]]," ptabs");
+  if(tab!=="analysen")return `<div class="narrow sp">${kopf}${reiter}${spTabInhalt(tab)}${tab==="mehr"?fbMeine()+pushSpielerinBlock()+fuss:""}</div>`;
+  return `<div class="narrow sp">${kopf}${reiter}<p class="hint">Hier siehst du, was dein Trainerteam für dich freigegeben hat.${neu?` <b>${neu} neu.</b>`:""}</p>
+    <div class="row-actions" style="margin-top:0"><button class="btn sm" data-act="spReload">Aktualisieren</button></div>
     ${SP.list.length?`<div class="fglist">${SP.list.map(f=>{const g=SP.gel[f.id],r=SP.re[f.id];const geaendert=g&&Date.parse(f.geaendert_am)>Date.parse(g.zuletzt_am)+1000;
       return `<button type="button" class="fgi fgkopf spitem" data-act="spOpen" data-id="${f.id}"><span class="fgt"><b>${esc(f.titel)}</b>${!g?' <span class="bd">neu</span>':geaendert?' <span class="bd">geändert</span>':""}</span>
         <span class="src">${esc(FGART[f.art]||"")} · ${esc(fmtStamp(Date.parse(f.erstellt_am)))}</span>${r&&r.art?`<span class="fgstat">${esc(REAKT[r.art])}</span>`:""}</button>`;}).join("")}</div>`
       :'<div class="empty" style="margin-top:12px"><h3>Noch nichts für dich da</h3><p>Sobald dein Trainerteam dir eine Analyse, einen Clip oder einen Kommentar freigibt, erscheint er hier.</p></div>'}
-    ${fbMeine()}
-    ${pushSpielerinBlock()}
-    ${fuss}</div>`;
+    </div>`;
 }
 
 $("#app").addEventListener("click",async e=>{const el=e.target.closest("[data-act]");if(!el||!SB.istSpielerin())return;const a=el.dataset.act;
+  if(a==="spTab"){S.ui.spTab=el.dataset.v;S.ui.spSel=null;render();window.scrollTo(0,0);if(typeof sptLaden==="function")sptLaden();return;}
   if(a==="spOpen")spOeffnen(el.dataset.id);
   if(a==="spZurueck"){S.ui.spSel=null;render();}
   if(a==="spReload")spLaden(true);

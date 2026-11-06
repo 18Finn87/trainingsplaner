@@ -675,3 +675,47 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .cbrow{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
 .cbrow input{width:22px;height:22px;flex:none}
 .fbh{font:600 13px var(--head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 4px}
+/* ---------- Phase 9: Aufstellung ---------- */
+.afeld{position:relative;width:100%;max-width:520px;aspect-ratio:68/80;margin:0 auto;border-radius:14px;overflow:hidden;
+  background:repeating-linear-gradient(180deg,#1f5e33 0 10%,#226637 10% 20%);border:2px solid rgba(255,255,255,.55)}
+.afeld .amitte{position:absolute;left:0;right:0;top:0;height:0;border-top:2px solid rgba(255,255,255,.45)}
+.afeld .akreis{position:absolute;left:50%;top:0;width:28%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.45);border-radius:50%}
+.afeld .astraf{position:absolute;left:22%;right:22%;height:17%;border:2px solid rgba(255,255,255,.45)}
+.afeld .astraf.u{bottom:-2px;border-bottom:0}
+.afeld .astraf.o{display:none}
+.aplatz{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;max-width:92px;padding:4px 6px;
+  border-radius:10px;background:rgba(13,13,13,.82);border:2px solid #fff;color:#fff;font:600 12px/1.15 var(--body);text-align:center;cursor:pointer}
+.aplatz .apos{font:700 10px var(--head);letter-spacing:.06em;color:#BFD6FF}
+.aplatz .aname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:84px}
+.aplatz.leer{background:rgba(255,255,255,.18);border-style:dashed}
+.aplatz.leer .aname{font-size:16px;line-height:1}
+.aplatz.sel,.chip.abank.sel{outline:3px solid var(--farbe-akzent);outline-offset:2px;background:var(--farbe-akzent-flaeche)}
+.aplatz .cap{font-style:normal;background:#E2B42A;color:#111;border-radius:50%;padding:0 4px;font-size:10px;font-weight:700}
+.afeld.klein .aplatz{cursor:default}
+.aufakt{align-items:center;flex-wrap:wrap}
+@media (max-width:420px){.aplatz{min-width:52px;padding:3px 4px;font-size:11px}.aplatz .aname{max-width:66px}}
+/* ---------- Phase 9: Mannschaft ---------- */
+.seg.ktabs{margin:0 0 16px;grid-template-columns:repeat(5,1fr)!important}
+@media (max-width:640px){.seg.ktabs button{font-size:12px;padding:10px 1px}}
+.tmzeile{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;background:var(--sunk);border-radius:10px;padding:8px 12px;margin:0 0 12px;font-size:14px}
+.tml{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.abwl li,.ksl li{grid-template-columns:minmax(0,1fr) auto auto}
+.dl .dzl{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto}
+.dl .dzl select{min-width:0;width:100%}
+.dzl.erl span b{text-decoration:line-through;opacity:.7}
+.ksdet{display:block!important}.ksdet ul{list-style:none;margin:0;padding:0 0 0 10px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.warnc{color:var(--bib)}
+.spterm{padding:12px 14px}.spterm.ohne{border-color:var(--farbe-akzent)}
+.spkopf{display:flex;flex-direction:column;gap:2px}.spkopf a{color:inherit}
+.zbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.zbtn{min-height:48px;padding:6px 4px;font-weight:700}
+.zbtn.z-ja.an{background:var(--ok);color:#0D0D0D;border-color:var(--ok)}
+.zbtn.z-nein.an{background:var(--bib);color:#0D0D0D;border-color:var(--bib)}
+.zbtn.z-vielleicht.an{background:#E2B42A;color:#0D0D0D;border-color:#E2B42A}
+.absform{background:var(--sunk);border-radius:10px;padding:10px 12px;margin-top:8px}
+.spmehr{margin-top:6px}
+.fahrten{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.fahrt{background:var(--sunk);border-radius:10px;padding:8px 12px}
+.spmitt{padding:12px 14px}.spmitt.neu{border-color:var(--farbe-akzent)}.spmitt.wichtig{border-left:4px solid var(--bib)}
+.spumf{padding:12px 14px}.ufwahl{margin-top:8px}
+@media (max-width:640px){.dl .dzl{grid-template-columns:1fr}.abwl li,.ksl li{grid-template-columns:minmax(0,1fr) auto}}

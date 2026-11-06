@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=11;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=12;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -232,6 +232,11 @@ const MIGRATIONS={
     const pl=p=>Object.assign({},p,{entwicklung:Object.assign(leer(),p.entwicklung||{})});
     if(out.kaders)out.kaders=Object.fromEntries(Object.entries(out.kaders).map(([t,k])=>[t,Object.assign({},k,{players:(k.players||[]).map(pl)})]));
     if(out.kader)out.kader=Object.assign({},out.kader,{players:(out.kader.players||[]).map(pl)});
+    return out;},
+  /* 11 → 12: Aufstellung mit Namen. Neu je Spiel: aufstellung = {formation, plaetze:{Position→Spielerin}, kapitaen, notiz}
+     (siehe js/aufstellung.js). Bestehende Spielberichte bekommen eine leere Aufstellung; alles andere bleibt unverändert. */
+  11:d=>{const out=Object.assign({},d);
+    out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{aufstellung:Object.assign({formation:"4-4-2",plaetze:{},kapitaen:null,notiz:""},s.aufstellung||{})})]));
     return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */

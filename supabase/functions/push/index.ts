@@ -113,6 +113,53 @@ async function freigabeMelden(team: string, id: string) {
   return await senden(liste, () => ({ title: "Neu vom Trainerteam", body: f.titel || "Neue Freigabe", tag: "fg-" + id }));
 }
 
+// ---------- Termine (Phase 9) ----------
+const zeitDe = (iso: string) => new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+async function terminErinnern(team: string, id: string) {
+  const { data: t } = await db.from("termine").select("*").eq("id", id).maybeSingle();
+  if (!t || t.team !== team || t.abgesagt) return { gesendet: 0, spielerinnen: 0 };
+  const { data: zus } = await db.from("zusagen").select("spielerin_id, status").eq("termin_id", id);
+  const beantwortet = new Set((zus ?? []).filter((z: { status: string }) => z.status !== "vielleicht").map((z: { spielerin_id: string }) => z.spielerin_id));
+  const liste = (await spielerinnenAbos(team)).filter((a) => !beantwortet.has(a.spielerin_id!));
+  const erg = await senden(liste, () => ({ title: "Bitte zu- oder absagen", body: `${t.titel || "Termin"} – ${zeitDe(t.beginn)}`, tag: "tm-" + id }));
+  return { ...erg, spielerinnen: new Set(liste.map((a) => a.spielerin_id)).size };
+}
+async function anAlle(team: string, titel: string, text: string, tag: string) {
+  const liste = await spielerinnenAbos(team);
+  const erg = await senden(liste, () => ({ title: titel.slice(0, 80) || "Trainingsplaner Oedheim", body: text.slice(0, 160), tag: tag || "info" }));
+  return { ...erg, spielerinnen: new Set(liste.map((a) => a.spielerin_id)).size };
+}
+// Kalender-Abo (iCal): GET …/push?kalender=<persönlicher Link-Schlüssel>
+async function kalender(token: string) {
+  const { data: tk } = await db.from("kalender_tokens").select("team, spielerin_id").eq("token", token).maybeSingle();
+  if (!tk) return new Response("Kalender nicht gefunden", { status: 404 });
+  if (tk.spielerin_id) {
+    const { data: z } = await db.from("zugaenge").select("aktiv").eq("team", tk.team).eq("spielerin_id", tk.spielerin_id).maybeSingle();
+    if (!z?.aktiv) return new Response("Kein aktiver Zugang", { status: 403 });
+  }
+  const { data: tms } = await db.from("termine").select("*").eq("team", tk.team).gte("beginn", new Date(Date.now() - 60 * 864e5).toISOString()).order("beginn");
+  const zus = new Map<string, string>();
+  if (tk.spielerin_id) {
+    const { data } = await db.from("zusagen").select("termin_id, status").eq("team", tk.team).eq("spielerin_id", tk.spielerin_id);
+    for (const z of data ?? []) zus.set(z.termin_id, z.status);
+  }
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const ic = (s: string) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  const z = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trainingsplaner Oedheim//DE", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:Trainingsplaner Oedheim", "REFRESH-INTERVAL;VALUE=DURATION:PT6H", "X-PUBLISHED-TTL:PT6H"];
+  for (const t of tms ?? []) {
+    const b = new Date(t.beginn), e = new Date(b.getTime() + (t.art === "spiel" ? 120 : 90) * 60000);
+    const st = zus.get(t.id);
+    const stTxt = tk.spielerin_id ? ({ ja: "Du hast zugesagt", nein: "Du hast abgesagt", vielleicht: "Vielleicht" } as Record<string, string>)[st ?? ""] ?? "Noch nicht beantwortet" : "";
+    const desc = [t.treffen && "Treffen: " + t.treffen, t.hinweis, stTxt].filter(Boolean).join("\n");
+    z.push("BEGIN:VEVENT", "UID:" + t.id + "@trainingsplaner-oedheim", "DTSTAMP:" + fmt(new Date()), "DTSTART:" + fmt(b), "DTEND:" + fmt(e),
+      "SUMMARY:" + ic((t.abgesagt ? "ABGESAGT: " : "") + (t.titel || "Termin")), ...(t.ort ? ["LOCATION:" + ic(t.ort)] : []),
+      ...(desc ? ["DESCRIPTION:" + ic(desc)] : []), "STATUS:" + (t.abgesagt ? "CANCELLED" : "CONFIRMED"), "END:VEVENT");
+  }
+  z.push("END:VCALENDAR");
+  return new Response(z.join("\r\n") + "\r\n", { headers: { ...CORS, "Content-Type": "text/calendar; charset=utf-8", "Cache-Control": "no-cache" } });
+}
+
 // ---------- Zeitsteuerung (stündlich) ----------
 function jetztBerlin() {
   const t = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", weekday: "short", hour: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
@@ -150,12 +197,42 @@ async function cronLauf() {
       await db.from("push_einstellungen").update({ letzte_feedback_meldung: datum }).eq("team", e.team);
     }
   }
+  // Termin-Erinnerung etwa 24 Stunden vorher an alle ohne Antwort (jede Stunde geprüft, je Termin nur einmal)
+  const einst = new Map((alle ?? []).map((e: { team: string }) => [e.team, e]));
+  const { data: bald } = await db.from("termine").select("id, team").is("erinnert_am", null).eq("abgesagt", false)
+    .gte("beginn", new Date(Date.now() + 20 * 3600e3).toISOString()).lte("beginn", new Date(Date.now() + 26 * 3600e3).toISOString());
+  for (const t of bald ?? []) {
+    const e = einst.get(t.team) as { termin_erinnerung?: boolean } | undefined;
+    if (!e || e.termin_erinnerung !== false) ergebnis.push({ team: t.team, termin: await terminErinnern(t.team, t.id) });
+    await db.from("termine").update({ erinnert_am: new Date().toISOString() }).eq("id", t.id);
+  }
+  // Absagen der letzten Stunde für Termine in den nächsten 36 Stunden an die Trainer (ohne Grund – der steht in der App)
+  const { data: abs } = await db.from("zusagen").select("spielerin_id, team, termine!inner(titel, beginn, abgesagt)")
+    .eq("status", "nein").eq("auto", false).gte("am", new Date(Date.now() - 3600e3).toISOString())
+    .gte("termine.beginn", new Date().toISOString()).lte("termine.beginn", new Date(Date.now() + 36 * 3600e3).toISOString());
+  const proTeam = new Map<string, { spielerin_id: string; termine: { titel: string; beginn: string } }[]>();
+  for (const a of (abs ?? []) as { spielerin_id: string; team: string; termine: { titel: string; beginn: string; abgesagt: boolean } }[]) {
+    if (a.termine.abgesagt) continue; const e = einst.get(a.team) as { absage_meldung?: boolean } | undefined; if (e && e.absage_meldung === false) continue;
+    proTeam.set(a.team, [...(proTeam.get(a.team) ?? []), a]);
+  }
+  for (const [team, liste] of proTeam) {
+    const { data: zug } = await db.from("zugaenge").select("spielerin_id, name").eq("team", team);
+    const nm = new Map((zug ?? []).map((z: { spielerin_id: string; name: string }) => [z.spielerin_id, z.name]));
+    const body = liste.map((a) => `${nm.get(a.spielerin_id) || "Spielerin"}: ${a.termine.titel || "Termin"} (${zeitDe(a.termine.beginn)})`).join("; ");
+    const { data: abos } = await db.from("push_abos").select("*").eq("team", team).eq("rolle", "trainer");
+    ergebnis.push({ team, absagen: await senden((abos ?? []) as Abo[], () => ({ title: liste.length === 1 ? "Kurzfristige Absage" : `${liste.length} kurzfristige Absagen`, body, tag: "absage" })) });
+  }
   return { ok: true, tag, stunde, ergebnis };
 }
 
 // ---------- Anfragen ----------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method === "GET") {
+    const tok = new URL(req.url).searchParams.get("kalender") ?? "";
+    if (/^[0-9a-f]{20,64}$/.test(tok)) { try { return await kalender(tok); } catch { return new Response("Fehler", { status: 500 }); } }
+    return new Response("Nicht gefunden", { status: 404 });
+  }
   try {
     const body = await req.json().catch(() => ({}));
     const aktion = String(body.aktion ?? "");
@@ -183,6 +260,8 @@ Deno.serve(async (req) => {
     if (!trainerTeam) return antwort({ error: "Nur für Trainer" }, 403);
     if (aktion === "erinnern") return antwort(await erinnern(trainerTeam, String(body.ziel ?? "ungelesen")));
     if (aktion === "freigabe") return antwort(await freigabeMelden(trainerTeam, String(body.id ?? "")));
+    if (aktion === "termin_erinnern") return antwort(await terminErinnern(trainerTeam, String(body.id ?? "")));
+    if (aktion === "an_alle") return antwort(await anAlle(trainerTeam, String(body.titel ?? ""), String(body.text ?? ""), String(body.tag ?? "")));
     return antwort({ error: "Unbekannte Aktion" }, 400);
   } catch (e) {
     return antwort({ error: (e as Error).message ?? "Fehler" }, 500);

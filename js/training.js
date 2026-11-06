@@ -104,6 +104,7 @@ function trainingEditor(id){
 
   ${planKasten(t)}
   <section class="blk"><h3>Anwesenheit</h3>
+   ${typeof terminTrainingZeile==="function"?terminTrainingZeile(id,t):""}
    <div class="asum"><span data-s="ja"><b>${sum.ja}</b> anwesend</span><span data-s="nein"><b>${sum.nein}</b> abwesend</span><span data-s="lim"><b>${sum.lim}</b> eingeschränkt${sum.limDa?` <small>(${sum.limDa} davon da)</small>`:""}</span><span data-s=""><b>${sum.offen}</b> offen</span></div>
    <p class="legend" style="margin:6px 0 14px">Im Training: <b>${hc.F}</b> Feldspielerinnen + <b>${hc.T}</b> TW</p>
    ${ps.length?`<div class="chips achips">${chips}</div><p class="legend">Name antippen = anwesend (nochmal = wieder offen). „⋯“ für abwesend mit Grund oder eine Einschränkung.</p>
