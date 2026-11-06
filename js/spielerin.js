@@ -11,8 +11,10 @@ async function spLaden(force){
   try{
     const z=await SB.api("/rest/v1/zugaenge?select=spielerin_id,name,team");SP.zugang=!!(z&&z.length);
     if(SP.zugang){
-      const [l,g,r]=await Promise.all([SB.api("/rest/v1/freigaben?select=id,team,art,titel,text,erstellt_am,geaendert_am&order=erstellt_am.desc"),
-        SB.api("/rest/v1/gelesen?select=freigabe_id,zuerst_am,zuletzt_am"),SB.api("/rest/v1/reaktionen?select=freigabe_id,art,kommentar,am")]);
+      const [l,g,r,fb]=await Promise.all([SB.api("/rest/v1/freigaben?select=id,team,art,titel,text,erstellt_am,geaendert_am&order=erstellt_am.desc"),
+        SB.api("/rest/v1/gelesen?select=freigabe_id,zuerst_am,zuletzt_am"),SB.api("/rest/v1/reaktionen?select=freigabe_id,art,kommentar,am"),
+        SB.api("/rest/v1/rpc/meine_feedbacks",{method:"POST",body:"{}"}).catch(()=>[])]);
+      SP.fb=fb||[];
       SP.list=l||[];SP.gel=Object.fromEntries((g||[]).map(x=>[x.freigabe_id,x]));SP.re=Object.fromEntries((r||[]).map(x=>[x.freigabe_id,x]));
     }else{SP.list=[];}
     SP.t=Date.now();SP.err="";
@@ -45,7 +47,7 @@ function vSpielerin(){
   spNach();const ich=spIch();
   const kopf=`<h2 class="page-h">Hallo${ich.name?" "+esc(ich.name):""}</h2>`;
   const fuss=`<div class="row-actions" style="margin-top:28px"><button class="btn ghost" data-act="spAbmelden">Abmelden</button></div>
-    <p class="legend">Angemeldet als ${esc(SB.st.session&&SB.st.session.email||"")}. Gespeichert wird nur, wann du etwas geöffnet hast, und deine Reaktionen und Kommentare – sichtbar für dein Trainerteam.</p>`;
+    <p class="legend">Angemeldet als ${esc(SB.st.session&&SB.st.session.email||"")}. Gespeichert wird, wann du etwas geöffnet hast, deine Reaktionen und Kommentare sowie dein Feedback – sichtbar für dein Trainerteam (anonymes Feedback ohne deinen Namen).</p>`;
   if(SP.err)return `<div class="narrow sp">${kopf}<div class="warn">${esc(SP.err)}</div><div class="row-actions"><button class="btn" data-act="spReload">Erneut versuchen</button></div>${fuss}</div>`;
   if(!SP.t)return `<div class="narrow sp">${kopf}<p class="hint">Wird geladen …</p></div>`;
   if(!SP.zugang)return `<div class="narrow sp">${kopf}<div class="notice">Dein Zugang ist im Moment nicht aktiv. Bitte sprich dein Trainerteam an.</div>${fuss}</div>`;
@@ -63,11 +65,13 @@ function vSpielerin(){
         ${r.am?`<p class="legend">Zuletzt gespeichert ${esc(fmtStamp(Date.parse(r.am)))}. Du kannst deine Rückmeldung jederzeit ändern.</p>`:""}</section></div>`;}
   const neu=SP.list.filter(f=>!SP.gel[f.id]).length;
   return `<div class="narrow sp">${kopf}<p class="hint">Hier siehst du, was dein Trainerteam für dich freigegeben hat.${neu?` <b>${neu} neu.</b>`:""}</p>
-    <div class="row-actions" style="margin-top:0"><button class="btn sm" data-act="spReload">Aktualisieren</button></div>
+    <div class="row-actions" style="margin-top:0">${fbSpielerinKnopf()}<button class="btn sm" data-act="spReload">Aktualisieren</button></div>
+    ${S.ui.fbOffen?fbForm():""}
     ${SP.list.length?`<div class="fglist">${SP.list.map(f=>{const g=SP.gel[f.id],r=SP.re[f.id];const geaendert=g&&Date.parse(f.geaendert_am)>Date.parse(g.zuletzt_am)+1000;
       return `<button type="button" class="fgi fgkopf spitem" data-act="spOpen" data-id="${f.id}"><span class="fgt"><b>${esc(f.titel)}</b>${!g?' <span class="bd">neu</span>':geaendert?' <span class="bd">geändert</span>':""}</span>
         <span class="src">${esc(FGART[f.art]||"")} · ${esc(fmtStamp(Date.parse(f.erstellt_am)))}</span>${r&&r.art?`<span class="fgstat">${esc(REAKT[r.art])}</span>`:""}</button>`;}).join("")}</div>`
       :'<div class="empty" style="margin-top:12px"><h3>Noch nichts für dich da</h3><p>Sobald dein Trainerteam dir eine Analyse, einen Clip oder einen Kommentar freigibt, erscheint er hier.</p></div>'}
+    ${fbMeine()}
     ${fuss}</div>`;
 }
 

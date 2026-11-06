@@ -179,7 +179,7 @@ function fgSpielerinTab(p){
   return zugangBlock(p)+(fgHinweis()?"":`<section class="blk"><h3>Freigaben an ${esc(p.name)} <span class="sub">${n}</span></h3>
     ${fgListe(f=>f.freigabe_empfaenger.some(e=>e.spielerin_id===p.id),"Noch nichts an sie freigegeben.")}
     <div class="row-actions"><button class="btn sm pri" data-act="fgKommentar" data-id="${p.id}"${hatZugang(p.id)?"":" disabled"}>Kommentar an ${esc(p.name)} freigeben</button></div>
-    ${hatZugang(p.id)?"":'<p class="legend">Zum Freigeben braucht sie zuerst einen aktiven Zugang.</p>'}</section>`);
+    ${hatZugang(p.id)?"":'<p class="legend">Zum Freigeben braucht sie zuerst einen aktiven Zugang.</p>'}</section>`+fbSpielerinBlock(p));
 }
 
 /* ---------- Bedienung ---------- */

@@ -4,12 +4,14 @@
 const einschrTxt=e=>e?`${e.grund||"eingeschränkt"}${e.notiz?` – ${e.notiz}`:""}${e.seit?` · seit ${fmtDate(e.seit).replace(/^\w+, /,"")}`:""}`:"";
 const nrSort=(a,b)=>(b.tw-a.tw)||((num(a.nummer)||999)-(num(b.nummer)||999))||a.name.localeCompare(b.name);
 function vKader(){
+  if(S.ui.fbView&&SB.cfgOk())return fbUebersicht();
   if(S.sel.spielerin&&pById(S.sel.spielerin))return spielerinView(pById(S.sel.spielerin));
   const q=(S.ui.kq||"").toLowerCase();
   const all=players().slice().sort(nrSort);
   const txt=p=>[p.name,p.nummer,p.position,...(p.positionen||[]),p.notiz,p.einschr&&einschrTxt(p.einschr)].join(" ").toLowerCase();
   const ps=all.filter(p=>!q||txt(p).includes(q));const nE=all.filter(p=>p.einschr).length;
   return `<div class="narrow"><h2 class="page-h">Kader</h2>
+  ${fbKaderKnopf()}
   <input class="search" data-key="kq" data-act="kQ" type="search" placeholder="Name, Nummer, Position, Notiz oder Grund suchen" value="${esc(S.ui.kq||"")}">
   <section class="blk"><h3>Spielerinnen <span class="sub">${all.length} im Kader, ${all.filter(p=>p.tw).length} TW${nE?`, ${nE} eingeschränkt`:""}${q?` · ${ps.length} gefunden`:""}</span></h3>
    <div class="prows">${ps.map(p=>`<div class="prow k2${p.einschr?" lim":""}">

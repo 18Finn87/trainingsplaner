@@ -663,3 +663,11 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .spreakt .btn{min-height:52px;white-space:normal;line-height:1.2}
 .spkom{border-left:3px solid var(--accent)}
 @media (max-width:420px){.spreakt{grid-template-columns:1fr}}
+/* ---------- Phase 8b: Feedback ---------- */
+.fbform{border-left:3px solid var(--accent)}
+.fbhinweis{background:var(--sunk);border-radius:10px;padding:10px 12px;margin-top:10px}
+.fbi{padding:12px 14px}
+.fbkopf{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+.fbi .seg{margin-top:4px}
+.fbmeine{margin-top:18px}
+.fbl li{grid-template-columns:minmax(0,1fr) auto}
