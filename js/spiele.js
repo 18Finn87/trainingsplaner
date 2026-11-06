@@ -2,15 +2,16 @@
 $("#app").addEventListener("input",e=>{if(e.target.dataset.act==="sQ"){S.ui.sq=e.target.value;render();}});
 /* Spiele */
 function vSpiele(){
-  const cur=S.sel.spiel&&S.spiele[S.sel.spiel]?S.sel.spiel:null;
+  const cur=S.sel.spiel&&S.spiele[S.sel.spiel]?S.sel.spiel:null;if(cur)S.ui.fgView=false;const fgv=!cur&&S.ui.fgView&&SB.cfgOk();
   const q=(S.ui.sq||"").toLowerCase().trim();
   const txt=s=>[s.gegner,s.datum,fmtDate(s.datum),s.ergebnis,s.wettbewerb,s.fazit,...(s.punkte||[]).map(p=>p.text+" "+(p.tag||""))].join(" ").toLowerCase();
   const all=sortedSpiele();const found=all.filter(([,s])=>!q||q.split(/\s+/).every(w=>txt(s).includes(w)));
   const li=found.map(([id,s])=>`<button class="li" data-act="selSpiel" data-id="${id}" aria-current="${id===cur}"><b>${esc(s.gegner||"Gegner offen")}${s.ergebnis?" · "+esc(s.ergebnis):""}</b><span>${esc(fmtDate(s.datum))}${s.wettbewerb?" · "+esc(s.wettbewerb):""}</span></button>`).join("");
-  return `<div class="split${cur?" has-sel":""}"><aside class="list"><h2>Spiele</h2><button class="btn pri new" data-act="newSpiel">Neuer Spielbericht</button>
+  return `<div class="split${cur||fgv?" has-sel":""}"><aside class="list"><h2>Spiele</h2><button class="btn pri new" data-act="newSpiel">Neuer Spielbericht</button>
+    ${SB.cfgOk()?`<button class="btn new" data-act="fgOffen" aria-current="${fgv}">Freigaben an Spielerinnen</button>`:""}
     <input class="search" type="search" data-key="sq" data-act="sQ" placeholder="Suchen: Gegner, Datum, Beobachtung …" value="${esc(S.ui.sq||"")}">
     ${q?`<p class="legend">${found.length} von ${all.length} Spielen</p>`:""}${li||`<p class="hint">${all.length?"Kein Spiel passt zur Suche.":"Noch keine Spielberichte."}</p>`}</aside>
-  <div class="editor">${cur?spielEditor(cur):`<div class="empty"><h3>Halte fest, was im Spiel auffällt</h3><p>Notiere Beobachtungen pro Halbzeit und markiere, was du trainieren willst. Im nächsten Training siehst du, welche Punkte schon eine Übung haben.</p><button class="btn pri" data-act="newSpiel">Neuer Spielbericht</button></div>${all.length?wiederBlock():""}`}</div></div>`;
+  <div class="editor">${cur?spielEditor(cur):fgv?fgUebersicht():`<div class="empty"><h3>Halte fest, was im Spiel auffällt</h3><p>Notiere Beobachtungen pro Halbzeit und markiere, was du trainieren willst. Im nächsten Training siehst du, welche Punkte schon eine Übung haben.</p><button class="btn pri" data-act="newSpiel">Neuer Spielbericht</button></div>${all.length?wiederBlock():""}`}</div></div>`;
 }
 /* Kurzinfo am Knopf „Details“: wie viel schon zugeordnet ist, und ob es das Problem auch in anderen Spielen gab */
 function ptBadge(p){const n=(p.medien||[]).length+(p.spielerinnen||[]).length+(p.teile||[]).length+(p.haupt?1:0);const w=wiederInSpielen(S.sel.spiel,p).length;
@@ -37,6 +38,7 @@ function spielEditor(id){
   ${medienBlock(id,s)}
   ${half(1)}${half(2)}
   <section class="blk"><h3>Gesamteindruck</h3><textarea class="inp" style="width:100%" rows="3" data-key="s-fazit" data-bind="fazit">${esc(s.fazit||"")}</textarea></section>
+  ${fgSpielBlock(id)}
   ${wiederBlock()}
   <div class="row-actions"><button class="btn pri" data-act="trainingFromSpiel">Training daraus planen${nTr?` (${nTr} Punkte)`:""}</button><button class="btn ghost danger" data-act="delSpiel">Spielbericht löschen</button></div>`;
 }

@@ -31,8 +31,9 @@ function spielerinView(p){
   const tab=S.ui.pTab||"stamm";const e=ent(p);const offen=e.ziele.filter(x=>!x.erreicht).length;
   const kopf=`<div class="narrow"><div class="ed-top"><button class="btn ghost" data-act="pBack">← Kader</button></div>
   <div class="ed-top"><input class="title-in" data-key="p-name" data-act="pF" data-f="name" data-id="${p.id}" value="${esc(p.name)}" aria-label="Name"></div>
-  ${seg("pTab",tab,[["stamm","Stammdaten"],["entw",`Entwicklung${offen?` <span class="bd">${offen}</span>`:""}`],["hist","Historie"]]," ptabs")}`;
+  ${seg("pTab",tab,[["stamm","Stammdaten"],["entw",`Entwicklung${offen?` <span class="bd">${offen}</span>`:""}`],["hist","Historie"],...(SB.cfgOk()?[["frei","Freigaben"]]:[])]," ptabs")}`;
   if(tab==="entw")return kopf+entwicklungTab(p)+"</div>";
+  if(tab==="frei")return kopf+fgSpielerinTab(p)+"</div>";
   if(tab==="hist")return kopf+histHtml()+"</div>";
   function histHtml(){return `<section class="blk"><h3>Trainingshistorie <span class="sub">${da} von ${trs.length} durchgeführten Trainings · ${fmtMin(minAll)}</span></h3>
    ${trs.length?`<ul class="hist">${trs.map(([id,t])=>`<li><button type="button" class="plink" data-act="pTr" data-id="${id}"><b>${esc(fmtDate(t.datum))}</b>${t.thema?` <span class="src">${esc(t.thema)}</span>`:""}</button><span class="${t.anwesenheit[p.id]==="ja"?"ok":"src"}">${esc(statusTxt(t))}</span><em>${t.anwesenheit[p.id]==="ja"?fmtMin(total(playerParts(t,p.id,"ist"))):""}</em></li>`).join("")}</ul>`:'<p class="hint">Noch keine durchgeführten Trainings.</p>'}</section>

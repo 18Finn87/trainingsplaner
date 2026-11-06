@@ -129,7 +129,7 @@ const SB=(()=>{
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncNow();});
   setInterval(()=>{if(document.visibilityState==="visible")syncNow();},60000);
   if(cfgOk())vonLink();
-  return {cfgOk,st,state,sendCode,verify,logout,mark,syncNow,pending:()=>Object.keys(state.pending).length};
+  return {cfgOk,st,state,sendCode,verify,logout,mark,syncNow,api,pending:()=>Object.keys(state.pending).length};
 })();
 
 /* Bereich in den Einstellungen */
