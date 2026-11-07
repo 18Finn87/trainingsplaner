@@ -678,11 +678,12 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 /* ---------- Phase 9: Aufstellung ---------- */
 .afeld{position:relative;width:100%;max-width:520px;aspect-ratio:68/80;margin:0 auto;border-radius:14px;overflow:hidden;
   background:repeating-linear-gradient(180deg,#1f5e33 0 10%,#226637 10% 20%);border:2px solid rgba(255,255,255,.55)}
-.afeld .amitte{position:absolute;left:0;right:0;top:0;height:0;border-top:2px solid rgba(255,255,255,.45)}
-.afeld .akreis{position:absolute;left:50%;top:0;width:28%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.45);border-radius:50%}
-.afeld .astraf{position:absolute;left:22%;right:22%;height:17%;border:2px solid rgba(255,255,255,.45)}
+.afeld .amitte{position:absolute;left:0;right:0;top:50%;height:0;border-top:2px solid rgba(255,255,255,.6)}
+.afeld .amitte::after{content:"Mittellinie";position:absolute;left:6px;top:2px;font:700 10px var(--head);letter-spacing:.06em;color:rgba(255,255,255,.8);text-transform:uppercase;text-shadow:0 0 3px #000}
+.afeld .akreis{position:absolute;left:50%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-50%);border:2px solid rgba(255,255,255,.45);border-radius:50%}
+.afeld .astraf{position:absolute;left:22%;right:22%;height:12%;border:2px solid rgba(255,255,255,.45)}
 .afeld .astraf.u{bottom:-2px;border-bottom:0}
-.afeld .astraf.o{display:none}
+.afeld .astraf.o{top:-2px;border-top:0}
 .aplatz{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;max-width:92px;padding:4px 6px;
   border-radius:10px;background:rgba(13,13,13,.82);border:2px solid #fff;color:#fff;font:600 12px/1.15 var(--body);text-align:center;cursor:pointer}
 .aplatz .apos{font:700 10px var(--head);letter-spacing:.06em;color:color-mix(in srgb,var(--farbe-akzent) 45%,#FFFFFF)}
