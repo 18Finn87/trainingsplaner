@@ -17,7 +17,7 @@
 /* Signalfarben (bewusst NICHT Akzent): --bib = Warnung/eingeschränkt, --ok = passt/anwesend. */
 :root{
   --paper:var(--farbe-grund); --surface:var(--farbe-karte); --sunk:#232323; --ink:#F2F2F2; --muted:#A3A3A3; --line:#2C2C2C;
-  --accent:var(--farbe-akzent); --accent-fill:var(--farbe-akzent-flaeche); --accent-ink:#FFFFFF; --accent2:var(--farbe-akzent2);
+  --accent:var(--farbe-akzent); --accent-fill:var(--farbe-akzent-flaeche); --accent-ink:var(--farbe-ink,#FFFFFF); --accent2:var(--farbe-akzent2);
   --bar:var(--farbe-grund); --bar-ink:#F2F2F2; --bar-line:#262626;
   --bib:#E39072; --bib-soft:#2B1D17; --ok:#8CC198; --ok-soft:#17241A; --warn-soft:#2B1D17;
   --blau:#2F6FA3; --rot:#C23B3B; --gelb:#E2B42A; --tw:#20262A; --arrow:#1C2520;
@@ -27,13 +27,13 @@
 }
 :root[data-theme="light"]{
   --paper:var(--farbe-grund-hell); --surface:var(--farbe-karte-hell); --sunk:#EFEEEA; --ink:#111111; --muted:#5C5C5C; --line:#E2E0DB;
-  --accent:var(--farbe-akzent-hell); --accent-fill:var(--farbe-akzent-hell); --accent-ink:#FFFFFF; --accent2:var(--farbe-akzent2-hell);
+  --accent:var(--farbe-akzent-hell); --accent-fill:var(--farbe-akzent-hell); --accent-ink:var(--farbe-ink-hell,#FFFFFF); --accent2:var(--farbe-akzent2-hell);
   --bar:#111111; --bar-ink:#F6F5F2; --bar-line:#111111;
   --bib:#B4532A; --bib-soft:#FBEDE6; --ok:#2F7A4B; --ok-soft:#E3F1E7; --warn-soft:#FBEDE6;
   color-scheme:light; }
 @media (prefers-color-scheme:light){ :root[data-theme="auto"]{
   --paper:var(--farbe-grund-hell); --surface:var(--farbe-karte-hell); --sunk:#EFEEEA; --ink:#111111; --muted:#5C5C5C; --line:#E2E0DB;
-  --accent:var(--farbe-akzent-hell); --accent-fill:var(--farbe-akzent-hell); --accent-ink:#FFFFFF; --accent2:var(--farbe-akzent2-hell);
+  --accent:var(--farbe-akzent-hell); --accent-fill:var(--farbe-akzent-hell); --accent-ink:var(--farbe-ink-hell,#FFFFFF); --accent2:var(--farbe-akzent2-hell);
   --bar:#111111; --bar-ink:#F6F5F2; --bar-line:#111111;
   --bib:#B4532A; --bib-soft:#FBEDE6; --ok:#2F7A4B; --ok-soft:#E3F1E7; --warn-soft:#FBEDE6;
   color-scheme:light; } }
@@ -407,7 +407,7 @@ details.fold[open]>summary{margin-bottom:10px}
 .tabs button[aria-current="page"]{color:#FFFFFF;opacity:1;border-color:var(--farbe-akzent)}
 .tabs button:hover{opacity:1}
 .themebtn,.gear{color:#FFFFFF}
-.gear[aria-current="page"]{color:#FFFFFF;border-color:var(--farbe-akzent)!important;background:rgba(47,128,237,.18)}
+.gear[aria-current="page"]{color:#FFFFFF;border-color:var(--farbe-akzent)!important;background:color-mix(in srgb,var(--farbe-akzent) 18%,transparent)}
 .iconbtn{color:var(--accent2)}
 .iconbtn:hover:not([disabled]),.btn:hover{border-color:var(--accent)}
 .btn.pri:hover{filter:none;background:var(--accent);border-color:var(--accent)}
@@ -685,7 +685,7 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .afeld .astraf.o{display:none}
 .aplatz{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;max-width:92px;padding:4px 6px;
   border-radius:10px;background:rgba(13,13,13,.82);border:2px solid #fff;color:#fff;font:600 12px/1.15 var(--body);text-align:center;cursor:pointer}
-.aplatz .apos{font:700 10px var(--head);letter-spacing:.06em;color:#BFD6FF}
+.aplatz .apos{font:700 10px var(--head);letter-spacing:.06em;color:color-mix(in srgb,var(--farbe-akzent) 45%,#FFFFFF)}
 .aplatz .aname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:84px}
 .aplatz.leer{background:rgba(255,255,255,.18);border-style:dashed}
 .aplatz.leer .aname{font-size:16px;line-height:1}
@@ -719,3 +719,11 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .spmitt{padding:12px 14px}.spmitt.neu{border-color:var(--farbe-akzent)}.spmitt.wichtig{border-left:4px solid var(--bib)}
 .spumf{padding:12px 14px}.ufwahl{margin-top:8px}
 @media (max-width:640px){.dl .dzl{grid-template-columns:1fr}.abwl li,.ksl li{grid-template-columns:minmax(0,1fr) auto}}
+/* ---------- Farbe je Mannschaft ---------- */
+.farbwahl{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
+.fswatch{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;position:relative;display:inline-flex;align-items:center;justify-content:center}
+.fswatch.an{outline:3px solid var(--ink);outline-offset:2px}
+.fswatch.frei input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.fswatch.frei span{color:#fff;font-weight:700;text-shadow:0 0 3px #000}
+.fvorschau{display:inline-flex;gap:6px;margin-left:4px}
+.fvorschau i{font-style:normal;font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;border:2px solid transparent}

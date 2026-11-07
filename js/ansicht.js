@@ -1,6 +1,7 @@
 "use strict";
 /* ---------- views ---------- */
 function render(){
+  if(typeof farbeAnwenden==="function")farbeAnwenden();   // Farbe der gewählten Mannschaft (js/farben.js)
   const ts=$("#teamSel");if(ts){ts.innerHTML=S.teamsDoc.list.map(t=>`<option value="${esc(t.id)}"${t.id===S.team?" selected":""}>${esc(t.name||"Ohne Namen")}</option>`).join("")+'<option value="__verwalten">Mannschaften verwalten …</option>';ts.hidden=!S.ready||!!S.fatal;}
   document.querySelectorAll("#tabs button,#gearBtn").forEach(b=>b.setAttribute("aria-current",b.dataset.view===S.view?"page":"false"));
   const app=$("#app");

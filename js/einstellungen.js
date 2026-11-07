@@ -75,7 +75,7 @@ function vEinstellungen(){
       <label class="lsinv">Beginn <input class="inp" type="time" data-key="tms-${t.id}" data-act="tmSet" data-f="start" data-id="${esc(t.id)}" value="${esc(t.start||"19:00")}"></label>
       <label class="lsinv">Dauer <input class="inp" type="number" min="0" data-key="tmd-${t.id}" data-act="tmSet" data-f="dauer" data-id="${esc(t.id)}" value="${esc(t.dauer||90)}"></label>
       <span class="lsuse">${c.p} Spielerinnen · ${c.t} Trainings · ${c.s} Spiele${t.id===S.team?" · <b>gewählt</b>":""}</span>
-      <span class="ctl">${t.id!==S.team?`<button class="btn sm" data-act="tmPick" data-id="${esc(t.id)}">Wählen</button>`:""}<button class="iconbtn" data-act="tmDel" data-id="${esc(t.id)}" aria-label="${esc(t.name)} löschen"${S.teamsDoc.list.length<2?" disabled":""}>✕</button></span></div>`;}).join("")}</div>
+      <span class="ctl">${t.id!==S.team?`<button class="btn sm" data-act="tmPick" data-id="${esc(t.id)}">Wählen</button>`:""}<button class="iconbtn" data-act="tmDel" data-id="${esc(t.id)}" aria-label="${esc(t.name)} löschen"${S.teamsDoc.list.length<2?" disabled":""}>✕</button></span>${farbWahl(t)}</div>`;}).join("")}</div>
     <div class="addpt"><input class="inp" data-key="tmnew" data-act="tmNew" placeholder="Neue Mannschaft, z. B. Damen 2"><button class="btn" data-act="tmAdd">Anlegen</button></div>
     <p class="legend">Beginn und Dauer sind die Vorgaben für neue Trainings dieser Mannschaft.</p></section>
   <section class="blk"><h3>Saison</h3><p class="hint">Für die Zeiträume „Saison“ und „Halbserie“ in der Statistik.</p>
@@ -158,12 +158,14 @@ async function tmDel(id){
 $("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act;
   if(a==="tmAdd")tmAdd();
   if(a==="tmPick"){switchTeam(el.dataset.id);S.view="einstellungen";render();}
+  if(a==="tmFarbe"){const t=S.teamsDoc.list.find(x=>x.id===el.dataset.id);if(t&&istFarbe(el.dataset.v)){t.farbe=el.dataset.v.toUpperCase();saveLater("teams");render();toast(t.id===S.team?"Farbe übernommen":`Farbe für ${t.name} gespeichert – sie gilt, sobald du diese Mannschaft wählst`);}}
   if(a==="tmDel")tmDel(el.dataset.id);
   if(a==="backupTeam"){const d=teamBackupData(S.team);download(`Trainingsplaner_${slug(teamName())}_${today()}.json`,JSON.stringify(d,null,1));toast("Mannschaft gesichert");}
 });
 $("#app").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.act==="tmNew"){e.preventDefault();tmAdd();}if(e.key==="Enter"&&e.target.dataset.act==="tmRename"){e.preventDefault();e.target.blur();}});
 $("#app").addEventListener("change",e=>{const el=e.target,a=el.dataset.act;if(a!=="tmRename"&&a!=="tmSet")return;const t=S.teamsDoc.list.find(x=>x.id===el.dataset.id);if(!t)return;
   if(a==="tmRename"){const n=el.value.trim();if(!n||S.teamsDoc.list.some(x=>x!==t&&x.name.toLowerCase()===n.toLowerCase())){el.value=t.name;if(n)toast("Diesen Namen gibt es schon.");return;}t.name=n;}
+  else if(el.dataset.f==="farbe"){if(!istFarbe(el.value))return;t.farbe=el.value.toUpperCase();}
   else t[el.dataset.f]=el.dataset.f==="dauer"?num(el.value):el.value;
   saveLater("teams");render();});
 

@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=12;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=13;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -237,6 +237,11 @@ const MIGRATIONS={
      (siehe js/aufstellung.js). Bestehende Spielberichte bekommen eine leere Aufstellung; alles andere bleibt unverändert. */
   11:d=>{const out=Object.assign({},d);
     out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{aufstellung:Object.assign({formation:"4-4-2",plaetze:{},kapitaen:null,notiz:""},s.aufstellung||{})})]));
+    return out;},
+  /* 12 → 13: Farbe je Mannschaft. Neu: teams.list[].farbe (Hauptfarbe als #RRGGBB, siehe js/farben.js).
+     Bestehende Mannschaften bekommen das bisherige Blau; alles andere bleibt unverändert. */
+  12:d=>{const out=Object.assign({},d);
+    if(out.teams&&Array.isArray(out.teams.list))out.teams=Object.assign({},out.teams,{list:out.teams.list.map(t=>Object.assign({farbe:"#2F80ED"},t))});
     return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
