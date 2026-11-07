@@ -1,12 +1,13 @@
 "use strict";
 /* ---------- pitch / board ---------- */
-const FIELDS={full:{vb:[-4,-4,76,113],w:68,h:105,s:1},half:{vb:[-4,-4,76,61],w:68,h:52.5,s:1},free:{vb:[-3,-3,46,36],w:40,h:30,s:.72}};
+const FIELDS={full:{vb:[-4,-4,76,113],w:68,h:105,s:1},half:{vb:[-4,-4,76,61],w:68,h:52.5,s:1},strafraum:{vb:[8,-3,52,37],w:68,h:34,s:.65},free:{vb:[-3,-3,46,36],w:40,h:30,s:.72}};
 function pitchMarkup(field){
-  const F=FIELDS[field],[x0,y0,w,h]=F.vb;let o="";
+  const F=FIELDS[field]||FIELDS.half,[x0,y0,w,h]=F.vb;let o="";
   const n=10;for(let i=0;i<n;i++)o+=`<rect x="${x0}" y="${y0+i*h/n}" width="${w}" height="${h/n+.05}" fill="${i%2?"#B8D5A4":"#C1DBAE"}"/>`;
   const L='fill="none" stroke="#fff" stroke-width=".35"';
   if(field==="free"){o+=`<rect x="0" y="0" width="40" height="30" ${L} stroke-dasharray="1.2 1"/>`;return o;}
-  o+=`<rect x="0" y="0" width="68" height="${F.h}" ${L}/>`;
+  if(field==="strafraum")o+=`<line x1="${x0}" y1="0" x2="${x0+w}" y2="0" ${L}/>`;
+  else o+=`<rect x="0" y="0" width="68" height="${F.h}" ${L}/>`;
   const box=(top,yb)=>{const s=top?1:-1;const y=top?0:yb;
     o+=`<rect x="13.84" y="${top?0:yb-16.5}" width="40.32" height="16.5" ${L}/><rect x="24.84" y="${top?0:yb-5.5}" width="18.32" height="5.5" ${L}/>`;
     o+=`<rect x="30.34" y="${top?-2:yb}" width="7.32" height="2" ${L}/><circle cx="34" cy="${y+s*11}" r=".35" fill="#fff"/>`;
@@ -14,7 +15,7 @@ function pitchMarkup(field){
   box(true);
   if(field==="full"){box(false,105);o+=`<line x1="0" y1="52.5" x2="68" y2="52.5" ${L}/><circle cx="34" cy="52.5" r="9.15" ${L}/><circle cx="34" cy="52.5" r=".35" fill="#fff"/>`;
     [[0,0,0],[68,0,90],[0,105,270],[68,105,180]].forEach(([cx,cy])=>{});}
-  else{o+=`<path d="M 24.85 52.5 A 9.15 9.15 0 0 1 43.15 52.5" ${L}/>`;}
+  else if(field==="half"){o+=`<path d="M 24.85 52.5 A 9.15 9.15 0 0 1 43.15 52.5" ${L}/>`;}
   return o;
 }
 function wavy(x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);if(len<.5)return `M${x1} ${y1}`;const ux=dx/len,uy=dy/len,nx=-uy,ny=ux;const end=Math.max(0,len-2.2);let d=`M${x1} ${y1}`;const step=.6;for(let t=step;t<=end;t+=step){const a=Math.sin(t*1.6)*.7;d+=` L${(x1+ux*t+nx*a).toFixed(2)} ${(y1+uy*t+ny*a).toFixed(2)}`;}d+=` L${x2} ${y2}`;return d;}
@@ -24,8 +25,8 @@ function tokenName(b,it){if(!b||!["blau","rot","gelb","tw"].includes(it.k))retur
   if(b.namenText&&b.namenText[key])return b.namenText[key];const pid=b.namen&&b.namen[key];
   const p=pid&&typeof pById==="function"?(pById(pid)||(typeof pAlle==="function"?pAlle(pid):null)):null;return p?(p.name||"").split(/\s+/)[0]:"";}
 function itemMarkup(it,i,s,selected,name){
-  const r=2.1*s,fs=2.5*s,nw=Math.max(4,String(name||"").length*fs*.56+1.6*s),ny=it.y+r+.5*s,
-    nm=name?`<g pointer-events="none"><rect x="${(it.x-nw/2).toFixed(2)}" y="${ny.toFixed(2)}" width="${nw.toFixed(2)}" height="${(fs+1*s).toFixed(2)}" rx="${(.9*s).toFixed(2)}" fill="#1C2520" fill-opacity=".88"/><text x="${it.x}" y="${(ny+fs*.86+.2*s).toFixed(2)}" text-anchor="middle" font-size="${fs.toFixed(2)}" font-family="Barlow,Arial" font-weight="700" fill="#fff">${esc(name)}</text></g>`:"",hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
+  const r=2.1*s,fs=2*s,nw=Math.max(4,String(name||"").length*fs*.56+1.6*s),ny=it.y+r+.5*s,
+    nm=name?`<g pointer-events="none"><rect x="${(it.x-nw/2).toFixed(2)}" y="${ny.toFixed(2)}" width="${nw.toFixed(2)}" height="${(fs+1*s).toFixed(2)}" rx="${(.9*s).toFixed(2)}" fill="#1C2520" fill-opacity=".8"/><text x="${it.x}" y="${(ny+fs*.86+.2*s).toFixed(2)}" text-anchor="middle" font-size="${fs.toFixed(2)}" font-family="Barlow,Arial" font-weight="700" fill="#fff">${esc(name)}</text></g>`:"",hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
   const lab=it.n?`<text x="${it.x}" y="${it.y+.75*s}" text-anchor="middle" font-size="${2.1*s}" font-family="Barlow Condensed,Arial Narrow,Arial" font-weight="700" fill="${it.k==="gelb"?"#1C2520":"#fff"}" pointer-events="none">${esc(it.n)}</text>`:"";
   const col={blau:"#2F6FA3",rot:"#C23B3B",gelb:"#E2B42A",tw:"#20262A"}[it.k];
   let g="";
@@ -75,7 +76,7 @@ let boardSeq=0;const boardTools={};
 function mountBoard(el,getB,onChange){
   const bkey=el.dataset.board;const pfx="b"+(++boardSeq);let tool=boardTools[bkey]||"select",sel=-1,selL=-1,drag=null,draft=null;
   el.innerHTML=`<div class="board"><div class="tools" role="toolbar" aria-label="Werkzeuge">${TOOLS.map(t=>t[0]==="sep"?'<span class="tsep"></span>':`<button type="button" class="tool" data-tool="${t[0]}" aria-pressed="${t[0]===tool}" aria-label="${t[1]}" title="${t[1]}">${ICON[t[0]]}<span class="tlabel">${t[1]}</span></button>`).join("")}
-    <span class="tsep"></span><label class="tool">Feld <select data-field style="border:0;background:none"><option value="half">Halbes Feld</option><option value="full">Ganzes Feld</option><option value="free">Freie Fläche 40×30</option></select></label></div>
+    <span class="tsep"></span><label class="tool">Feld <select data-field style="border:0;background:none"><option value="half">Halbes Feld</option><option value="strafraum">Strafraum (groß)</option><option value="full">Ganzes Feld</option><option value="free">Freie Fläche 40×30</option></select></label></div>
     <div class="stage"></div><div class="selbar"></div></div>`;
   const stage=el.querySelector(".stage"),selbar=el.querySelector(".selbar"),fieldSel=el.querySelector("[data-field]");
   const B=()=>{const b=getB();b.items=b.items||[];b.lines=b.lines||[];b.field=b.field||"half";return b;};
