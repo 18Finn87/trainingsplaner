@@ -730,3 +730,14 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 /* Aufstellung: Positionen verschieben */
 .afeld.versch{cursor:crosshair;outline:3px dashed var(--farbe-akzent);outline-offset:3px}
 .afeld.versch .aplatz{cursor:pointer}
+/* ---------- Matchplan ---------- */
+.pfeld{position:relative;height:120px;max-width:520px;margin:10px auto 4px;border-radius:10px;overflow:hidden;background:repeating-linear-gradient(180deg,#1f5e33 0 12.5%,#226637 12.5% 25%);border:2px solid rgba(255,255,255,.5)}
+.pfeld .pl{position:absolute;left:0;right:0;top:50%;border-top:2px solid rgba(255,255,255,.4)}
+.pfeld .pz{position:absolute;left:4%;right:4%;border-radius:8px;background:color-mix(in srgb,var(--farbe-akzent) 45%,transparent);border:2px solid var(--farbe-akzent)}
+.pfeld .pz.hoch{top:6%;height:38%}.pfeld .pz.mittel{top:32%;height:36%}.pfeld .pz.tief{top:58%;height:36%}
+.pfeld .pt,.pfeld .pe{position:absolute;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.85);letter-spacing:.05em;white-space:nowrap;z-index:2;text-shadow:0 0 3px #000}
+.pfeld .pt{top:2px}.pfeld .pe{bottom:2px}
+.stdrow{display:grid;grid-template-columns:150px minmax(0,150px) minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.stdrow.zu{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
+.stdrow select,.stdrow input{min-width:0;width:100%}
+@media (max-width:640px){.stdrow{grid-template-columns:1fr 1fr auto}.stdrow input[data-f=variante]{grid-column:1 / 3}.stdrow.zu{grid-template-columns:1fr 1fr auto}}

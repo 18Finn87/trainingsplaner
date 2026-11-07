@@ -108,12 +108,12 @@ $("#app").addEventListener("change",e=>{const el=e.target;if(S.view!=="spiele")r
 function aufstellungDaten(s){
   const {a,bank}=aufFeld(s);const F=slotsVon(a);
   return {formation:a.formation,plaetze:F.map(([pos,x,y],i)=>{const p=pById(a.plaetze[i]);return {pos,x,y,name:p?p.name:"",nr:p?p.nummer||"":"",kap:!!(p&&a.kapitaen===p.id)};}),
-    bank:bank.map(id=>{const p=pById(id);return {name:p.name,nr:p.nummer||""};}),notiz:a.notiz||""};
+    bank:bank.map(id=>{const p=pById(id);return {name:p.name,nr:p.nummer||""};}),notiz:a.notiz||"",spielform:a.spielform,plan:typeof matchplanDaten==="function"?matchplanDaten(s):null};
 }
 /* Anzeige einer veröffentlichten Aufstellung (ohne Bearbeiten) */
 function aufstellungAnzeige(d){
   if(!d||!d.plaetze)return "";
   return `<div class="afeld klein">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${d.plaetze.map(p=>`<span class="aplatz${p.name?"":" leer"}" style="left:${p.x}%;top:${p.y}%"><span class="apos">${esc(p.pos)}</span><span class="aname">${p.name?`${p.nr?`<b>${esc(p.nr)}</b> `:""}${esc(p.name.length>11?p.name.split(/\s+/)[0]:p.name)}${p.kap?' <i class="cap">C</i>':""}`:"–"}</span></span>`).join("")}</div>
     ${d.bank&&d.bank.length?`<p class="legend" style="margin:10px 0 4px">Bank</p><p style="margin:0">${d.bank.map(b=>esc((b.nr?b.nr+" ":"")+b.name)).join(" · ")}</p>`:""}
-    ${d.notiz?`<p class="hint" style="margin-top:8px">${esc(d.notiz)}</p>`:""}`;
+    ${d.notiz?`<p class="hint" style="margin-top:8px">${esc(d.notiz)}</p>`:""}${d.plan&&typeof matchplanAnzeige==="function"?matchplanAnzeige(d.plan):""}`;
 }

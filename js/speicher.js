@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=14;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=15;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -248,6 +248,12 @@ const MIGRATIONS={
   13:d=>{const out=Object.assign({},d);
     out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({gegnerInfo:"",taktik:""},s,
       {aufstellung:Object.assign({spielform:11,lage:{}},s.aufstellung||{formation:"4-4-2",plaetze:{},kapitaen:null,notiz:""})})]));
+    return out;},
+  /* 14 → 15: Matchplan. Neu je Spiel: plan = {pressing, aufbau, gegenBall, mitBall, umschalten, stdOff[], ecken, zuordnung[],
+     mauer, stdNotiz} (siehe js/spielplan.js); Skizzen boardStdOff/boardStdDef entstehen erst beim Zeichnen. */
+  14:d=>{const out=Object.assign({},d);
+    out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{plan:Object.assign({pressing:"mittel",aufbau:"gemischt",gegenBall:"",mitBall:"",umschalten:"",
+      stdOff:[],ecken:"raum",zuordnung:[],mauer:"",stdNotiz:""},s.plan||{})})]));
     return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */

@@ -37,9 +37,7 @@ function spielEditor(id){
   ${spielReiter(s)==="planung"?`
   ${spielKader(id,s)}
   ${aufstellungBlock(id,s)}
-  <section class="blk"><h3>Vorbereitung</h3>
-    <label class="f">Gegner – was wissen wir?<textarea class="inp" style="width:100%" rows="3" data-key="s-ginfo" data-bind="gegnerInfo" placeholder="z. B. schnelle Außen, stark bei Standards, spielt lange Bälle">${esc(s.gegnerInfo||"")}</textarea></label>
-    <label class="f" style="margin-top:10px">Unser Plan / Taktik<textarea class="inp" style="width:100%" rows="4" data-key="s-taktik" data-bind="taktik" placeholder="z. B. hoch anlaufen, Spielaufbau über die Sechs, Standards: Lisa schießt">${esc(s.taktik||"")}</textarea></label></section>
+  ${matchplanBlock(id,s)}
   <div class="row-actions"><button class="btn pri" data-act="spBer" data-v="analyse">Weiter zur Analyse →</button></div>`:`
   <p class="hint">Kreis antippen wechselt zwischen negativ (−), positiv (+) und Hinweis (•). „Trainieren“ schickt den Punkt in die Trainingsplanung.</p>
   ${medienBlock(id,s)}
