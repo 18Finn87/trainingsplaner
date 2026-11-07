@@ -25,7 +25,7 @@ function spielEditor(id){
     <button class="star ptmore" data-act="ptOpen" data-pid="${p.id}" aria-expanded="${!!S.ui.open["pt"+p.id]}">Details${ptBadge(p)}</button></div>
     <button class="iconbtn" data-act="ptDel" data-i="${i}" aria-label="Punkt löschen">✕</button></div>${S.ui.open["pt"+p.id]?ptDetail(id,s,p,i):""}`).join("");
   const half=hz=>`<section class="blk"><h3>${hz}. Halbzeit</h3>${ptRows(hz)||'<p class="hint">Noch keine Beobachtungen.</p>'}
-    <div class="addpt"><input class="inp" data-key="new-${hz}" data-act="ptNew" data-hz="${hz}" placeholder="Beobachtung eintippen, Enter fügt hinzu"><button class="btn" data-act="ptAdd" data-hz="${hz}">Hinzufügen</button></div>
+    <div class="addpt"><input class="inp" data-key="new-${id}-${hz}" data-entwurf data-act="ptNew" data-hz="${hz}" placeholder="Beobachtung eintippen, Enter fügt hinzu"><button class="btn" data-act="ptAdd" data-hz="${hz}">Hinzufügen</button></div>
     <details data-dkey="${id}-${hz}" style="margin-top:14px"${S.ui.open["d"+id+hz]??(s["board"+hz]&&(s["board"+hz].items||[]).length)?" open":""}><summary style="cursor:pointer;font-weight:600">Aufstellung / Skizze</summary><div style="margin-top:10px" data-board="spiel:${id}:board${hz}"></div></details></section>`;
   const nTr=s.punkte.filter(p=>p.trainieren).length;
   return `<div class="ed-top"><button class="btn ghost back" data-act="back">← Spiele</button></div>

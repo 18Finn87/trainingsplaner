@@ -8,6 +8,9 @@ function render(){
   const a=document.activeElement;let fk=null,ss=null,se=null;
   if(a&&a.dataset&&a.dataset.key&&app.contains(a)){fk=a.dataset.key;try{ss=a.selectionStart;se=a.selectionEnd;}catch(e){}}
   const scrollY=window.scrollY;
+  /* Eingaben, die erst beim „Hinzufügen“ gespeichert werden (data-entwurf), überleben das Neuzeichnen –
+     z. B. wenn der Abgleich im Hintergrund neue Daten bringt, während getippt wird. */
+  const entwuerfe={};app.querySelectorAll("[data-entwurf][data-key]").forEach(el=>{if(el.value)entwuerfe[el.dataset.key]=el.value;});
   if(!S.ready){app.innerHTML='<p class="hint">Daten werden geladen …</p>';return;}
   if(S.fatal){app.innerHTML=`<div class="notice">${esc(S.fatal)}</div>`;return;}
   /* Spielerin angemeldet: nur ihre Freigaben. Leeres Gerät ohne Anmeldung: zuerst die Anmelde-Seite. */
@@ -17,6 +20,7 @@ function render(){
   const notice=(S.notice?`<div class="notice">${esc(S.notice)}</div>`:"")+backupReminder();
   app.innerHTML=notice+({training:vTraining,uebungen:vUebungen,spiele:vSpiele,kader:vKader,statistik:vStatistik,planung:vPlanung,einstellungen:vEinstellungen}[S.view]||vTraining)();
   mountBoards();
+  Object.entries(entwuerfe).forEach(([k,v])=>{const el=app.querySelector(`[data-entwurf][data-key="${CSS.escape(k)}"]`);if(el&&!el.value)el.value=v;});
   if(fk){const el=app.querySelector(`[data-key="${CSS.escape(fk)}"]`);if(el){el.focus({preventScroll:true});try{if(ss!=null)el.setSelectionRange(ss,se);}catch(e){}}}
   window.scrollTo(0,scrollY);
 }

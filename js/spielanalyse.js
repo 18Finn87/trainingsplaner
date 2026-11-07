@@ -14,7 +14,7 @@ function medienBlock(id,s){
      <input class="inp" data-key="md-${x.id}" data-act="mdTitel" data-id="${x.id}" value="${esc(x.titel||"")}" placeholder="${x.typ==="bild"?"Titel, z. B. 23. Min. Abstand Kette":"Titel, z. B. Gegentor 1:1"}">
      <div class="medfoot"><span class="src">${nutz(x.id)?`${nutz(x.id)} Punkt${nutz(x.id)>1?"e":""}`:"keinem Punkt zugeordnet"}</span>${SB.cfgOk()?`<button class="btn sm mini" data-act="fgMed" data-id="${x.id}">Freigeben</button>`:""}<button class="iconbtn mini" data-act="mdDel" data-id="${x.id}" aria-label="Entfernen">✕</button></div></div>`).join("")}</div>`:'<p class="hint">Screenshots (werden verkleinert) und Links zu Videoclips, z. B. aus Veo. Zuordnen kannst du sie bei jeder Beobachtung unter „Details“.</p>'}
    <div class="row-actions"><label class="btn sm">Screenshots hinzufügen<input type="file" accept="image/*" multiple data-act="mdBild" class="sr"></label></div>
-   <div class="addpt" style="margin-top:10px"><input class="inp" type="url" inputmode="url" id="mdUrl" placeholder="Link zum Videoclip (https://…)"><button class="btn" data-act="mdVideo">Clip hinzufügen</button></div></section>`;
+   <div class="addpt" style="margin-top:10px"><input class="inp" type="url" inputmode="url" id="mdUrl" data-key="md-url-${esc(S.sel.spiel||"")}" data-entwurf placeholder="Link zum Videoclip (https://…)"><button class="btn" data-act="mdVideo">Clip hinzufügen</button></div></section>`;
 }
 /* Details eines Beobachtungspunkts */
 function ptDetail(id,s,p,i){
