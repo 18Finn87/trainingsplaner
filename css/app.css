@@ -727,3 +727,6 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .fswatch.frei span{color:#fff;font-weight:700;text-shadow:0 0 3px #000}
 .fvorschau{display:inline-flex;gap:6px;margin-left:4px}
 .fvorschau i{font-style:normal;font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;border:2px solid transparent}
+/* Aufstellung: Positionen verschieben */
+.afeld.versch{cursor:crosshair;outline:3px dashed var(--farbe-akzent);outline-offset:3px}
+.afeld.versch .aplatz{cursor:pointer}

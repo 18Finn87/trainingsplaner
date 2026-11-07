@@ -33,17 +33,26 @@ function spielEditor(id){
   <div class="meta"><label class="f">Datum<input type="date" data-key="s-datum" data-bind="datum" value="${esc(s.datum||"")}"></label>
    <label class="f">Ergebnis<input data-key="s-erg" data-bind="ergebnis" value="${esc(s.ergebnis||"")}" placeholder="z. B. 2:1"></label>
    <label class="f">Wettbewerb<input data-key="s-wb" data-bind="wettbewerb" value="${esc(s.wettbewerb||"")}" placeholder="Liga, Pokal …"></label></div>
+  ${seg("spBer",spielReiter(s),[["planung","Spielplanung"],["analyse",`Analyse${s.punkte.length?` <span class="bd">${s.punkte.length}</span>`:""}`]]," ptabs")}
+  ${spielReiter(s)==="planung"?`
   ${spielKader(id,s)}
   ${aufstellungBlock(id,s)}
+  <section class="blk"><h3>Vorbereitung</h3>
+    <label class="f">Gegner – was wissen wir?<textarea class="inp" style="width:100%" rows="3" data-key="s-ginfo" data-bind="gegnerInfo" placeholder="z. B. schnelle Außen, stark bei Standards, spielt lange Bälle">${esc(s.gegnerInfo||"")}</textarea></label>
+    <label class="f" style="margin-top:10px">Unser Plan / Taktik<textarea class="inp" style="width:100%" rows="4" data-key="s-taktik" data-bind="taktik" placeholder="z. B. hoch anlaufen, Spielaufbau über die Sechs, Standards: Lisa schießt">${esc(s.taktik||"")}</textarea></label></section>
+  <div class="row-actions"><button class="btn pri" data-act="spBer" data-v="analyse">Weiter zur Analyse →</button></div>`:`
   <p class="hint">Kreis antippen wechselt zwischen negativ (−), positiv (+) und Hinweis (•). „Trainieren“ schickt den Punkt in die Trainingsplanung.</p>
   ${medienBlock(id,s)}
   ${half(1)}${half(2)}
   <section class="blk"><h3>Gesamteindruck</h3><textarea class="inp" style="width:100%" rows="3" data-key="s-fazit" data-bind="fazit">${esc(s.fazit||"")}</textarea></section>
   ${fgSpielBlock(id)}
   ${wiederBlock()}
-  <div class="row-actions"><button class="btn pri" data-act="trainingFromSpiel">Training daraus planen${nTr?` (${nTr} Punkte)`:""}</button><button class="btn ghost danger" data-act="delSpiel">Spielbericht löschen</button></div>`;
+  <div class="row-actions"><button class="btn pri" data-act="trainingFromSpiel">Training daraus planen${nTr?` (${nTr} Punkte)`:""}</button><button class="btn ghost danger" data-act="delSpiel">Spielbericht löschen</button></div>`}`;
 }
 
+/* Reiter im Spielbericht: vor dem Spiel „Spielplanung“, danach „Analyse“ (bis man selbst umschaltet) */
+function spielReiter(s){const w=(S.ui.spBer||{})[S.sel.spiel];if(w)return w;return !s.datum||s.datum>=today()&&!(s.punkte||[]).length&&!s.ergebnis?"planung":"analyse";}
+$("#app").addEventListener("click",e=>{const el=e.target.closest('[data-act="spBer"]');if(!el||S.view!=="spiele")return;S.ui.spBer=S.ui.spBer||{};S.ui.spBer[S.sel.spiel]=el.dataset.v;render();window.scrollTo(0,0);});
 /* Spielkader: wer war beim Spiel dabei (s.kader = Liste von Spielerinnen-Kennungen). */
 function spielKader(id,s){
   const ps=players().slice().sort(nrSort);const k=s.kader||[];const open=S.ui.open["dsk"+id]??!k.length;

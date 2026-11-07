@@ -15,12 +15,32 @@ const FORMATIONEN={
 };
 /* Welche Hauptposition (Kader) passt zu welchem Kürzel – für „Automatisch füllen“ */
 const POS_GRUPPE={TW:"Tor",LV:"Abwehr",IV:"Abwehr",RV:"Abwehr",DM:"Mittelfeld",ZM:"Mittelfeld",LM:"Mittelfeld",RM:"Mittelfeld",ZOM:"Mittelfeld",LA:"Sturm",RA:"Sturm",ST:"Sturm"};
-function aufst(s){const a=s.aufstellung=s.aufstellung||{};if(!FORMATIONEN[a.formation])a.formation="4-4-2";a.plaetze=a.plaetze||{};if(!("kapitaen" in a))a.kapitaen=null;a.notiz=a.notiz||"";return a;}
+/* Spielformen (Datenversion 14): 11er wie bisher, dazu Flex-Formen mit weniger Spielerinnen.
+   Formationen ohne feste Vorlage werden aus der Zahlenfolge berechnet (Abwehr → Angriff). */
+const SPIELFORMEN={11:Object.keys(FORMATIONEN),9:["3-3-2","3-2-3","4-3-1","3-4-1","2-4-2"],8:["3-3-1","3-2-2","2-3-2","2-4-1"],7:["2-3-1","3-2-1","2-2-2","3-1-2"]};
+function reihenNamen(anz,r,n){
+  if(r===0)return ({1:["IV"],2:["IV","IV"],3:["IV","IV","IV"],4:["LV","IV","IV","RV"],5:["LV","IV","IV","IV","RV"]})[anz]||Array(anz).fill("IV");
+  if(r===n-1&&n>1)return ({1:["ST"],2:["ST","ST"],3:["LA","ST","RA"]})[anz]||Array(anz).fill("ST");
+  return ({1:[n>2&&r===1?"DM":"ZM"],2:["ZM","ZM"],3:["LM","ZM","RM"],4:["LM","ZM","ZM","RM"],5:["LM","ZM","ZM","ZM","RM"]})[anz]||Array(anz).fill("ZM");
+}
+function slotsAus(form){
+  if(FORMATIONEN[form])return FORMATIONEN[form];
+  const reihen=String(form).split("-").map(Number).filter(n=>n>0);const n=reihen.length;const out=[["TW",50,91]];
+  reihen.forEach((anz,r)=>{const y=n===1?45:Math.round(74-r*(56/(n-1)));const nm=reihenNamen(anz,r,n);
+    const rand=anz===2?30:anz===3?18:12;   // zwei nebeneinander enger, viele breiter
+    for(let i=0;i<anz;i++)out.push([nm[i],anz===1?50:Math.round(rand+i*((100-2*rand)/(anz-1))),y]);});
+  return out;
+}
+/* Positionen mit eigenen Verschiebungen (a.lage = {Index: {x,y}}) */
+const slotsVon=a=>slotsAus(a.formation).map(([p,x,y],i)=>a.lage&&a.lage[i]?[p,a.lage[i].x,a.lage[i].y]:[p,x,y]);
+function aufst(s){const a=s.aufstellung=s.aufstellung||{};if(![11,9,8,7].includes(a.spielform))a.spielform=11;
+  if(!SPIELFORMEN[a.spielform].includes(a.formation))a.formation=SPIELFORMEN[a.spielform][0];
+  a.plaetze=a.plaetze||{};a.lage=a.lage||{};if(!("kapitaen" in a))a.kapitaen=null;a.notiz=a.notiz||"";return a;}
 const kurzName=p=>{if(!p)return "";const n=(p.name||"").trim();return n.length>11?n.split(/\s+/)[0].slice(0,11):n;};
 function aufFeld(s){const a=aufst(s);const k=s.kader||[];Object.keys(a.plaetze).forEach(x=>{if(!k.includes(a.plaetze[x]))delete a.plaetze[x];});if(a.kapitaen&&!k.includes(a.kapitaen))a.kapitaen=null;const ids=new Set(Object.values(a.plaetze));return {a,feld:ids,bank:(s.kader||[]).filter(id=>!ids.has(id)&&pById(id))};}
 
 function aufstellungBlock(id,s){
-  const k=s.kader||[];const {a,bank}=aufFeld(s);const F=FORMATIONEN[a.formation];const sel=S.ui.aufSel||null;
+  const k=s.kader||[];const {a,bank}=aufFeld(s);const F=slotsVon(a);const sel=S.ui.aufSel||null;
   const besetzt=F.filter((_,i)=>a.plaetze[i]&&pById(a.plaetze[i])).length;
   const kopf=`<h3>Aufstellung <span class="sub">${k.length?`${besetzt} von ${F.length} Positionen · ${bank.length} auf der Bank`:"zuerst Spielkader wählen"}</span></h3>`;
   if(!k.length)return `<section class="blk">${kopf}<p class="hint">Wähle oben unter „Kader für dieses Spiel“ aus, wer dabei ist. Danach stellst du hier die Startelf auf – mit Namen.</p></section>`;
@@ -29,9 +49,11 @@ function aufstellungBlock(id,s){
       <span class="apos">${pos}</span><span class="aname">${p?`${p.nummer?`<b>${esc(p.nummer)}</b> `:""}${esc(kurzName(p))}${a.kapitaen===p.id?' <i class="cap">C</i>':""}`:"+"}</span></button>`;};
   const selInfo=sel&&sel.t==="p"&&a.plaetze[sel.v]?pById(a.plaetze[sel.v]):sel&&sel.t==="b"?pById(sel.v):null;
   return `<section class="blk aufst">${kopf}
-    <div class="meta"><label class="f">Formation<select data-act="aufForm">${opt(Object.keys(FORMATIONEN).map(f=>[f,f]),a.formation)}</select></label></div>
-    <p class="legend" style="margin:6px 0 8px">Antippen: Position wählen, dann eine Spielerin von der Bank antippen – oder zwei Positionen nacheinander antippen zum Tauschen.</p>
-    <div class="afeld" role="group" aria-label="Spielfeld">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${F.map(platz).join("")}</div>
+    <div class="meta"><label class="f">Spielform<select data-act="aufSpielform">${opt([["11","11 gegen 11"],["9","9 gegen 9 (Flex)"],["8","8 gegen 8 (Flex)"],["7","7 gegen 7 (Flex)"]],String(a.spielform))}</select></label>
+      <label class="f">Formation<select data-act="aufForm">${opt(SPIELFORMEN[a.spielform].map(f=>[f,f]),a.formation)}</select></label></div>
+    <div class="row-actions" style="margin:6px 0"><button class="btn sm${S.ui.aufVersch?" pri":""}" data-act="aufVersch">${S.ui.aufVersch?"✓ Verschieben beenden":"Positionen verschieben"}</button>${Object.keys(a.lage).length?'<button class="btn sm ghost" data-act="aufLageZurueck">Positionen zurücksetzen</button>':""}</div>
+    <p class="legend" style="margin:6px 0 8px">${S.ui.aufVersch?"<b>Verschieben:</b> Position antippen, dann die neue Stelle auf dem Feld antippen.":"Antippen: Position wählen, dann eine Spielerin von der Bank antippen – oder zwei Positionen nacheinander antippen zum Tauschen."}</p>
+    <div class="afeld${S.ui.aufVersch?" versch":""}" role="group" aria-label="Spielfeld" data-act="aufFeld">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${F.map(platz).join("")}</div>
     ${selInfo?`<div class="row-actions aufakt"><span class="src">Ausgewählt: <b>${esc(selInfo.name)}</b></span>
       ${sel.t==="p"?`<button class="btn sm" data-act="aufBank">Auf die Bank</button>`:""}
       <button class="btn sm${a.kapitaen===selInfo.id?" pri":""}" data-act="aufKap" data-id="${selInfo.id}">${a.kapitaen===selInfo.id?"Kapitänin ✓":"Zur Kapitänin machen"}</button>
@@ -44,7 +66,7 @@ function aufstellungBlock(id,s){
 }
 /* Freie Positionen nach Hauptposition füllen (TW zuerst), Rest der Reihe nach */
 function aufAutoFill(s){
-  const {a,bank}=aufFeld(s);const F=FORMATIONEN[a.formation];const frei=F.map((f,i)=>i).filter(i=>!a.plaetze[i]||!pById(a.plaetze[i]));
+  const {a,bank}=aufFeld(s);const F=slotsVon(a);const frei=F.map((f,i)=>i).filter(i=>!a.plaetze[i]||!pById(a.plaetze[i]));
   const rest=bank.slice();const nimm=f=>{const j=rest.findIndex(f);return j<0?null:rest.splice(j,1)[0];};
   frei.forEach(i=>{const pos=F[i][0],gr=POS_GRUPPE[pos];let pid=null;
     if(pos==="TW")pid=nimm(id=>pById(id).tw)||nimm(id=>pById(id).position==="Tor");
@@ -55,6 +77,13 @@ function aufAutoFill(s){
 
 $("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el||S.view!=="spiele")return;const s=S.spiele[S.sel.spiel];if(!s)return;const a=el.dataset.act;
   if(!a.startsWith("auf"))return;const A=aufst(s);const sel=S.ui.aufSel;const save=()=>{saveLater("spiel",S.sel.spiel);render();};
+  if(a==="aufVersch"){S.ui.aufVersch=!S.ui.aufVersch;S.ui.aufSel=null;render();return;}
+  if(a==="aufLageZurueck"){A.lage={};S.ui.aufSel=null;save();return;}
+  /* Verschieben: gewählte Position an die angetippte Stelle setzen */
+  if(a==="aufFeld"){if(!S.ui.aufVersch||!sel||sel.t!=="p")return;const r=el.getBoundingClientRect();
+    const x=Math.round(Math.max(6,Math.min(94,(e.clientX-r.left)/r.width*100))),y=Math.round(Math.max(5,Math.min(95,(e.clientY-r.top)/r.height*100)));
+    A.lage[sel.v]={x,y};save();return;}
+  if(a==="aufPlatz"&&S.ui.aufVersch){const i=el.dataset.i;S.ui.aufSel=sel&&sel.t==="p"&&sel.v===i?null:{t:"p",v:i};render();return;}
   if(a==="aufPlatz"){const i=el.dataset.i;
     if(sel&&sel.t==="b"){Object.keys(A.plaetze).forEach(k=>{if(A.plaetze[k]===sel.v)delete A.plaetze[k];});A.plaetze[i]=sel.v;S.ui.aufSel=null;save();return;}
     if(sel&&sel.t==="p"&&sel.v!==i){const x=A.plaetze[sel.v],y=A.plaetze[i];if(y)A.plaetze[sel.v]=y;else delete A.plaetze[sel.v];if(x)A.plaetze[i]=x;else delete A.plaetze[i];S.ui.aufSel=null;save();return;}
@@ -69,13 +98,15 @@ $("#app").addEventListener("click",e=>{const el=e.target.closest("[data-act]");i
   if(a==="aufLeeren"){if(!confirmDel("Alle Spielerinnen auf die Bank setzen?"))return;A.plaetze={};S.ui.aufSel=null;save();}
 });
 $("#app").addEventListener("change",e=>{const el=e.target;if(S.view!=="spiele")return;const s=S.spiele[S.sel.spiel];if(!s)return;
-  if(el.dataset.act==="aufForm"){const A=aufst(s);const alt=FORMATIONEN[A.formation].length;A.formation=el.value;const n=FORMATIONEN[A.formation].length;
+  if(el.dataset.act==="aufForm"||el.dataset.act==="aufSpielform"){const A=aufst(s);const alt=slotsAus(A.formation).length;
+    if(el.dataset.act==="aufSpielform"){A.spielform=+el.value;A.formation=SPIELFORMEN[A.spielform][0];}else A.formation=el.value;
+    const n=slotsAus(A.formation).length;A.lage={};
     Object.keys(A.plaetze).forEach(k=>{if(+k>=n)delete A.plaetze[k];});if(n<alt)toast("Spielerinnen auf weggefallenen Positionen sind jetzt auf der Bank");S.ui.aufSel=null;saveLater("spiel",S.sel.spiel);render();}
   if(el.dataset.act==="aufNotiz"){aufst(s).notiz=el.value.trim();saveLater("spiel",S.sel.spiel);}
 });
 /* Aufstellung als einfache Liste (für Spielerinnen-Ansicht und Druck) */
 function aufstellungDaten(s){
-  const {a,bank}=aufFeld(s);const F=FORMATIONEN[a.formation];
+  const {a,bank}=aufFeld(s);const F=slotsVon(a);
   return {formation:a.formation,plaetze:F.map(([pos,x,y],i)=>{const p=pById(a.plaetze[i]);return {pos,x,y,name:p?p.name:"",nr:p?p.nummer||"":"",kap:!!(p&&a.kapitaen===p.id)};}),
     bank:bank.map(id=>{const p=pById(id);return {name:p.name,nr:p.nummer||""};}),notiz:a.notiz||""};
 }
