@@ -24,7 +24,8 @@ function tokenName(b,it){if(!b||!["blau","rot","gelb","tw"].includes(it.k))retur
   if(b.namenText&&b.namenText[key])return b.namenText[key];const pid=b.namen&&b.namen[key];
   const p=pid&&typeof pById==="function"?(pById(pid)||(typeof pAlle==="function"?pAlle(pid):null)):null;return p?(p.name||"").split(/\s+/)[0]:"";}
 function itemMarkup(it,i,s,selected,name){
-  const r=2.1*s,nm=name?`<text x="${it.x}" y="${it.y+r+2.1*s}" text-anchor="middle" font-size="${1.75*s}" font-family="Barlow,Arial" font-weight="700" fill="#fff" stroke="#1C2520" stroke-width=".45" paint-order="stroke" pointer-events="none">${esc(name)}</text>`:"",hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
+  const r=2.1*s,fs=2.5*s,nw=Math.max(4,String(name||"").length*fs*.56+1.6*s),ny=it.y+r+.5*s,
+    nm=name?`<g pointer-events="none"><rect x="${(it.x-nw/2).toFixed(2)}" y="${ny.toFixed(2)}" width="${nw.toFixed(2)}" height="${(fs+1*s).toFixed(2)}" rx="${(.9*s).toFixed(2)}" fill="#1C2520" fill-opacity=".88"/><text x="${it.x}" y="${(ny+fs*.86+.2*s).toFixed(2)}" text-anchor="middle" font-size="${fs.toFixed(2)}" font-family="Barlow,Arial" font-weight="700" fill="#fff">${esc(name)}</text></g>`:"",hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
   const lab=it.n?`<text x="${it.x}" y="${it.y+.75*s}" text-anchor="middle" font-size="${2.1*s}" font-family="Barlow Condensed,Arial Narrow,Arial" font-weight="700" fill="${it.k==="gelb"?"#1C2520":"#fff"}" pointer-events="none">${esc(it.n)}</text>`:"";
   const col={blau:"#2F6FA3",rot:"#C23B3B",gelb:"#E2B42A",tw:"#20262A"}[it.k];
   let g="";

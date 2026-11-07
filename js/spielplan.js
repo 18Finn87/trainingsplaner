@@ -25,13 +25,14 @@ const TAFEL_FARBEN={rot:"Rot",gelb:"Gelb",tw:"TW"};
 function tafelAufstellung(s,f){
   const a=aufst(s);const F=slotsVon(a);const std=f.startsWith("boardStd");
   const b=s[f]=s[f]||{field:std?"half":"full",items:[],lines:[]};b.items=(b.items||[]).filter(it=>it.k!=="rot");b.lines=b.lines||[];
+  if(std&&b.field==="full"&&!b.items.length&&!b.lines.length)b.field="half";   // Standards: halbes Feld = alles doppelt so groß
   b.namen=Object.assign({},b.namen);Object.keys(b.namen).forEach(k=>{if(k.startsWith("rot:"))delete b.namen[k];});
   const kader=(s.kader||[]).filter(pById);const ids=F.map((_,i)=>a.plaetze[i]&&pById(a.plaetze[i])?a.plaetze[i]:null);
   if(!ids.some(Boolean))kader.slice(0,F.length).forEach((pid,i)=>ids[i]=pid);
   const shift=f==="boardGegenBall"?(pressHoehe(plan(s))-50)*.6:0;   // gegen den Ball: Linien zur Pressinghöhe schieben
   F.forEach(([pos,x,y],i)=>{let px,py;
     if(b.field==="full"){px=x*.68;py=Math.max(4,Math.min(98,y+(i===0?0:shift)))*1.05;}
-    else if(b.field==="half"){const reihe=i<6?0:1,anz=reihe?F.length-6:Math.min(6,F.length),sp=reihe?i-6:i;px=anz===1?34:6+sp*(56/Math.max(1,anz-1));py=reihe?49:44;}
+    else if(b.field==="half"){const reihe=Math.floor(i/4),anz=Math.min(4,F.length-reihe*4),sp=i%4;px=anz===1?34:8+sp*(52/3);py=29+reihe*9;}   // 4 je Reihe, damit Namen Platz haben
     else{px=x*.4;py=y*.3;}
     b.items.push({k:"rot",x:+px.toFixed(2),y:+py.toFixed(2),n:String(i+1)});if(ids[i])b.namen["rot:"+(i+1)]=ids[i];});
 }

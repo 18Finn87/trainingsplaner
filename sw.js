@@ -2,7 +2,7 @@
    Deine Daten liegen NICHT hier, sondern in der Datenbank des Browsers (IndexedDB).
    Strategie: erst beim Server fragen (damit Updates sofort ankommen); antwortet er nicht
    innerhalb von 3 Sekunden oder gibt es kein Netz, kommt die gespeicherte Version. */
-const CACHE="trainingsplaner-v21";
+const CACHE="trainingsplaner-v22";
 const FILES=["./","index.html","css/app.css","manifest.webmanifest",
   "js/basis.js","js/speicher.js","js/berechnung.js","js/tafel.js","js/ansicht.js",
   "js/training.js","js/uebungen.js","js/spiele.js","js/kader.js","js/einstellungen.js","js/statistik.js","js/planung.js","js/spielanalyse.js","js/teilen.js","js/konfig.js","js/sync.js","js/bloecke.js","js/entwicklung.js","js/freigaben.js","js/spielerin.js","js/feedback.js","js/push.js","js/aufstellung.js","js/team.js","js/spteam.js","js/farben.js","js/spielplan.js","js/app.js",
