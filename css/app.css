@@ -741,3 +741,16 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .stdrow.zu{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 .stdrow select,.stdrow input{min-width:0;width:100%}
 @media (max-width:640px){.stdrow{grid-template-columns:1fr 1fr auto}.stdrow input[data-f=variante]{grid-column:1 / 3}.stdrow.zu{grid-template-columns:1fr 1fr auto}}
+/* Pressinglinie und Zeichenfelder */
+.afeld .apress{position:absolute;left:0;right:0;height:0;border-top:3px dashed #FFD84D;z-index:1;pointer-events:none}
+.afeld .apress span{position:absolute;right:6px;top:-18px;font:700 10px var(--head);letter-spacing:.06em;color:#FFD84D;text-transform:uppercase;text-shadow:0 0 3px #000}
+.afeld .aplatz{z-index:2}
+.pfeld .plinie{position:absolute;left:0;right:0;border-top:3px dashed #FFD84D}
+.prange{margin-top:10px}.prange input{width:100%}
+.tafelfold{margin-top:12px}
+.tlgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px 10px}
+.tlrow{display:flex;align-items:center;gap:8px}
+.tlrow select{flex:1;min-width:0}
+.tdot{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:700 13px var(--head);color:#fff;border:2px solid #fff}
+.tdot.rot{background:#C23B3B}.tdot.gelb{background:#E2B42A;color:#1C2520}.tdot.tw{background:#20262A}
+.tafelpub svg{width:100%;max-width:520px;height:auto;display:block;margin:6px auto;border-radius:10px}

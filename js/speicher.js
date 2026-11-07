@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=15;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=16;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -254,6 +254,12 @@ const MIGRATIONS={
   14:d=>{const out=Object.assign({},d);
     out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{plan:Object.assign({pressing:"mittel",aufbau:"gemischt",gegenBall:"",mitBall:"",umschalten:"",
       stdOff:[],ecken:"raum",zuordnung:[],mauer:"",stdNotiz:""},s.plan||{})})]));
+    return out;},
+  /* 15 → 16: Pressinglinie & Zeichenfelder. Neu im Matchplan: pressY (Feineinstellung, leer = Stufe) und pressAnzeigen
+     (Linie im Aufstellungsfeld). Neue Spielfelder boardGegenBall/boardMitBall und je Spielfeld namen {"rot:1": Spielerin}
+     entstehen erst beim Benutzen. Bestehende Daten bleiben unverändert. */
+  15:d=>{const out=Object.assign({},d);
+    out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{plan:Object.assign({pressY:null,pressAnzeigen:true},s.plan||{})})]));
     return out;},
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */

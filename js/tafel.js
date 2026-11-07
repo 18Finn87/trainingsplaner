@@ -18,8 +18,13 @@ function pitchMarkup(field){
   return o;
 }
 function wavy(x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);if(len<.5)return `M${x1} ${y1}`;const ux=dx/len,uy=dy/len,nx=-uy,ny=ux;const end=Math.max(0,len-2.2);let d=`M${x1} ${y1}`;const step=.6;for(let t=step;t<=end;t+=step){const a=Math.sin(t*1.6)*.7;d+=` L${(x1+ux*t+nx*a).toFixed(2)} ${(y1+uy*t+ny*a).toFixed(2)}`;}d+=` L${x2} ${y2}`;return d;}
-function itemMarkup(it,i,s,selected){
-  const r=2.1*s,hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
+/* Name zu einer nummerierten Spielerin auf der Tafel: b.namen {"rot:1": Spielerin-Kennung} (Trainer) oder
+   b.namenText {"rot:1": "Eda"} (veröffentlichte Fassung für Spielerinnen) */
+function tokenName(b,it){if(!b||!["blau","rot","gelb","tw"].includes(it.k))return "";const key=it.k+":"+(it.n||"");
+  if(b.namenText&&b.namenText[key])return b.namenText[key];const pid=b.namen&&b.namen[key];
+  const p=pid&&typeof pById==="function"?(pById(pid)||(typeof pAlle==="function"?pAlle(pid):null)):null;return p?(p.name||"").split(/\s+/)[0]:"";}
+function itemMarkup(it,i,s,selected,name){
+  const r=2.1*s,nm=name?`<text x="${it.x}" y="${it.y+r+2.1*s}" text-anchor="middle" font-size="${1.75*s}" font-family="Barlow,Arial" font-weight="700" fill="#fff" stroke="#1C2520" stroke-width=".45" paint-order="stroke" pointer-events="none">${esc(name)}</text>`:"",hl=selected?`<circle cx="${it.x}" cy="${it.y}" r="${r+1.3}" fill="none" stroke="var(--accent,#2F80ED)" stroke-width=".5" stroke-dasharray="1 .6"/>`:"";
   const lab=it.n?`<text x="${it.x}" y="${it.y+.75*s}" text-anchor="middle" font-size="${2.1*s}" font-family="Barlow Condensed,Arial Narrow,Arial" font-weight="700" fill="${it.k==="gelb"?"#1C2520":"#fff"}" pointer-events="none">${esc(it.n)}</text>`:"";
   const col={blau:"#2F6FA3",rot:"#C23B3B",gelb:"#E2B42A",tw:"#20262A"}[it.k];
   let g="";
@@ -29,7 +34,7 @@ function itemMarkup(it,i,s,selected){
   else if(it.k==="pole") g=`<rect x="${it.x-.35*s}" y="${it.y-2*s}" width="${.7*s}" height="${4*s}" rx=".3" fill="#E2B42A" stroke="#1C2520" stroke-width=".2"/>`;
   else if(it.k==="mini"||it.k==="goal"){const W=it.k==="goal"?7.32:3.2,H=it.k==="goal"?1.6:1.2;const rot=it.r?` transform="rotate(${it.r} ${it.x} ${it.y})"`:"";
     g=`<g${rot}><rect x="${it.x-W/2}" y="${it.y-H/2}" width="${W}" height="${H}" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width=".5"/><line x1="${it.x-W/2}" y1="${it.y-H/2}" x2="${it.x+W/2}" y2="${it.y-H/2}" stroke="#1C2520" stroke-width=".25"/></g>`;}
-  return `<g data-i="${i}" style="cursor:grab">${hl}<circle cx="${it.x}" cy="${it.y}" r="${r+1.6}" fill="transparent"/>${g}</g>`;
+  return `<g data-i="${i}" style="cursor:grab">${hl}<circle cx="${it.x}" cy="${it.y}" r="${r+1.6}" fill="transparent"/>${g}${nm}</g>`;
 }
 function lineMarkup(l,i,pfx,selected){
   const c=selected?"#2F80ED":"#1C2520";const m=`url(#${pfx}-ah${selected?"s":""})`;
@@ -45,7 +50,7 @@ function boardSVG(b,pfx,selItem=-1,selLine=-1,draft=null){
   o+=`<g>${pitchMarkup(b.field)}</g>`;
   (b.lines||[]).forEach((l,i)=>o+=lineMarkup(l,i,pfx,i===selLine));
   if(draft)o+=lineMarkup(draft,-1,pfx,false);
-  (b.items||[]).forEach((it,i)=>o+=itemMarkup(it,i,F.s,i===selItem));
+  (b.items||[]).forEach((it,i)=>o+=itemMarkup(it,i,F.s,i===selItem,tokenName(b,it)));
   return o+"</svg>";
 }
 const ICON={

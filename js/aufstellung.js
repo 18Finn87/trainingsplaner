@@ -53,7 +53,7 @@ function aufstellungBlock(id,s){
       <label class="f">Formation<select data-act="aufForm">${opt(SPIELFORMEN[a.spielform].map(f=>[f,f]),a.formation)}</select></label></div>
     <div class="row-actions" style="margin:6px 0"><button class="btn sm${S.ui.aufVersch?" pri":""}" data-act="aufVersch">${S.ui.aufVersch?"✓ Verschieben beenden":"Positionen verschieben"}</button>${Object.keys(a.lage).length?'<button class="btn sm ghost" data-act="aufLageZurueck">Positionen zurücksetzen</button>':""}</div>
     <p class="legend" style="margin:6px 0 8px">${S.ui.aufVersch?"<b>Verschieben:</b> Position antippen, dann die neue Stelle auf dem Feld antippen.":"Antippen: Position wählen, dann eine Spielerin von der Bank antippen – oder zwei Positionen nacheinander antippen zum Tauschen."}</p>
-    <div class="afeld${S.ui.aufVersch?" versch":""}" role="group" aria-label="Spielfeld" data-act="aufFeld">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${F.map(platz).join("")}</div>
+    <div class="afeld${S.ui.aufVersch?" versch":""}" role="group" aria-label="Spielfeld" data-act="aufFeld">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${aufPressLinie(s)}${F.map(platz).join("")}</div>
     ${selInfo?`<div class="row-actions aufakt"><span class="src">Ausgewählt: <b>${esc(selInfo.name)}</b></span>
       ${sel.t==="p"?`<button class="btn sm" data-act="aufBank">Auf die Bank</button>`:""}
       <button class="btn sm${a.kapitaen===selInfo.id?" pri":""}" data-act="aufKap" data-id="${selInfo.id}">${a.kapitaen===selInfo.id?"Kapitänin ✓":"Zur Kapitänin machen"}</button>
@@ -113,7 +113,10 @@ function aufstellungDaten(s){
 /* Anzeige einer veröffentlichten Aufstellung (ohne Bearbeiten) */
 function aufstellungAnzeige(d){
   if(!d||!d.plaetze)return "";
-  return `<div class="afeld klein">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${d.plaetze.map(p=>`<span class="aplatz${p.name?"":" leer"}" style="left:${p.x}%;top:${p.y}%"><span class="apos">${esc(p.pos)}</span><span class="aname">${p.name?`${p.nr?`<b>${esc(p.nr)}</b> `:""}${esc(p.name.length>11?p.name.split(/\s+/)[0]:p.name)}${p.kap?' <i class="cap">C</i>':""}`:"–"}</span></span>`).join("")}</div>
+  return `<div class="afeld klein">${'<i class="amitte"></i><i class="akreis"></i><i class="astraf o"></i><i class="astraf u"></i>'}${d.plan&&d.plan.pressAnzeigen!==false&&typeof d.plan.pressY==="number"?pressLinieHtml(d.plan.pressY):""}${d.plaetze.map(p=>`<span class="aplatz${p.name?"":" leer"}" style="left:${p.x}%;top:${p.y}%"><span class="apos">${esc(p.pos)}</span><span class="aname">${p.name?`${p.nr?`<b>${esc(p.nr)}</b> `:""}${esc(p.name.length>11?p.name.split(/\s+/)[0]:p.name)}${p.kap?' <i class="cap">C</i>':""}`:"–"}</span></span>`).join("")}</div>
     ${d.bank&&d.bank.length?`<p class="legend" style="margin:10px 0 4px">Bank</p><p style="margin:0">${d.bank.map(b=>esc((b.nr?b.nr+" ":"")+b.name)).join(" · ")}</p>`:""}
     ${d.notiz?`<p class="hint" style="margin-top:8px">${esc(d.notiz)}</p>`:""}${d.plan&&typeof matchplanAnzeige==="function"?matchplanAnzeige(d.plan):""}`;
 }
+/* Pressinglinie aus dem Matchplan im Aufstellungsfeld (js/spielplan.js) */
+const pressLinieHtml=y=>`<i class="apress" style="top:${y}%"><span>Pressinglinie</span></i>`;
+function aufPressLinie(s){if(typeof plan!=="function")return "";const p=plan(s);return p.pressAnzeigen?pressLinieHtml(pressHoehe(p)):"";}
