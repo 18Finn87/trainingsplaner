@@ -16,6 +16,8 @@ function medienBlock(id,s){
    <div class="row-actions"><label class="btn sm">Screenshots hinzufügen<input type="file" accept="image/*" multiple data-act="mdBild" class="sr"></label></div>
    <div class="addpt" style="margin-top:10px"><input class="inp" type="url" inputmode="url" id="mdUrl" data-key="md-url-${esc(S.sel.spiel||"")}" data-entwurf placeholder="Link zum Videoclip (https://…)"><button class="btn" data-act="mdVideo">Clip hinzufügen</button></div></section>`;
 }
+/* Skizze je Beobachtung (punkt.skizze, wie eine Taktiktafel) */
+const skizzeDa=b=>!!(b&&((b.items||[]).length||(b.lines||[]).length));
 /* Details eines Beobachtungspunkts */
 function ptDetail(id,s,p,i){
   const sp=S.settings.schwerpunkte||[],teile=S.settings.mannschaftsteile||[];
@@ -26,6 +28,9 @@ function ptDetail(id,s,p,i){
     <div class="meta" style="margin:0"><label class="f">Hauptschwerpunkt<select data-key="pth-${p.id}" data-act="ptHaupt" data-i="${i}">${opt([["","–"],...sp.map(x=>[x,x])],p.haupt||"")}</select></label></div>
     <p class="legend" style="margin:10px 0 6px">Mannschaftsteile</p><div class="chips">${teile.map(x=>`<button type="button" class="chip tag" data-act="ptTeil" data-i="${i}" data-v="${esc(x)}" aria-pressed="${(p.teile||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
     <p class="legend" style="margin:10px 0 6px">Spielerinnen${s.kader&&s.kader.length?" (aus dem Spielkader)":""}</p><div class="chips">${kader.map(x=>`<button type="button" class="chip tag" data-act="ptSp" data-i="${i}" data-v="${x.id}" aria-pressed="${(p.spielerinnen||[]).includes(x.id)}">${x.nummer?`<span class="nr">${esc(x.nummer)}</span>`:""}${esc(x.name)}</button>`).join("")}</div>
+    <details class="fold tafelfold" data-dkey="ptsk-${p.id}"${(S.ui.open["dptsk"+p.id]??skizzeDa(p.skizze))?" open":""}><summary>Skizze zu dieser Beobachtung${skizzeDa(p.skizze)?" ✓":""}</summary>
+      <p class="hint" style="margin:0 0 8px">Eigenes Spielfeld nur für diese Beobachtung – z. B. wie die Kette stand und wie sie stehen soll.</p>
+      <div data-board="spielpt:${id}:${p.id}"></div></details>
     <p class="legend" style="margin:10px 0 6px">Medien</p>${m.length?`<div class="chips">${m.map(x=>`<button type="button" class="chip tag medchip" data-act="ptMed" data-i="${i}" data-v="${x.id}" aria-pressed="${(p.medien||[]).includes(x.id)}">${x.typ==="bild"?`<img src="${x.data}" alt="">`:"▶"} ${esc(x.titel||(x.typ==="bild"?"Screenshot":"Clip"))}</button>`).join("")}</div>`:'<p class="hint" style="margin:0">Noch keine Medien – oben im Bereich „Screenshots und Videoclips“ hinzufügen.</p>'}
     <p class="legend" style="margin:14px 0 6px">Passende Übungen ${p.haupt||p.tag?`<span class="src">(${esc([p.haupt,p.tag].filter(Boolean).join(", "))})</span>`:""}</p>
     ${!p.haupt&&!p.tag?'<p class="hint" style="margin:0">Wähle ein Thema oder einen Hauptschwerpunkt, dann schlägt die App Übungen vor.</p>':vor.length?vor.map(({id:eid,e,why})=>`<div class="pick"><div><b>${e.favorit?"★ ":""}${esc(e.name||"Ohne Namen")}</b><span>${esc(why)} · ${num(e.dauer)} min</span></div><button class="btn sm pri" data-act="ptToTr" data-i="${i}" data-id="${eid}">Ins Training</button></div>`).join(""):'<p class="hint" style="margin:0">Keine passende Übung in der Bibliothek.</p>'}

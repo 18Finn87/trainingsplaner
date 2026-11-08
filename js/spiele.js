@@ -14,7 +14,7 @@ function vSpiele(){
   <div class="editor">${cur?spielEditor(cur):fgv?fgUebersicht():`<div class="empty"><h3>Halte fest, was im Spiel auffällt</h3><p>Notiere Beobachtungen pro Halbzeit und markiere, was du trainieren willst. Im nächsten Training siehst du, welche Punkte schon eine Übung haben.</p><button class="btn pri" data-act="newSpiel">Neuer Spielbericht</button></div>${all.length?wiederBlock():""}`}</div></div>`;
 }
 /* Kurzinfo am Knopf „Details“: wie viel schon zugeordnet ist, und ob es das Problem auch in anderen Spielen gab */
-function ptBadge(p){const n=(p.medien||[]).length+(p.spielerinnen||[]).length+(p.teile||[]).length+(p.haupt?1:0);const w=wiederInSpielen(S.sel.spiel,p).length;
+function ptBadge(p){const n=(p.medien||[]).length+(p.spielerinnen||[]).length+(p.teile||[]).length+(p.haupt?1:0)+(skizzeDa(p.skizze)?1:0);const w=wiederInSpielen(S.sel.spiel,p).length;
   return `${n?` <span class="bd">${n}</span>`:""}${w?` <span class="bd warnbd" title="auch in ${w} anderen Spiel${w>1?"en":""}">↻${w}</span>`:""}`;}
 function spielEditor(id){
   const s=S.spiele[id];s.punkte=s.punkte||[];

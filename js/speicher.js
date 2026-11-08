@@ -3,7 +3,7 @@
    meta/teams (Mannschaften), meta/kader:<team> (Kader je Mannschaft), meta/settings (gemeinsame Listen),
    uebungen/<id> (gemeinsam), trainings/<id> und spiele/<id> (je mit Feld team).
    meta/schema hält die Version des Datenformats (für Migrationen). */
-const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=16;
+const DB_NAME="trainingsplaner",DB_VER=1,DATA_VERSION=17;
 const LS="trainingsplaner-v1",LS_TEAM="tp-mannschaft";
 const STORE={uebung:"uebungen",training:"trainings",spiel:"spiele"};
 let idb=null;const dirty=new Set();const timers={};
@@ -261,6 +261,8 @@ const MIGRATIONS={
   15:d=>{const out=Object.assign({},d);
     out.spiele=Object.fromEntries(Object.entries(out.spiele||{}).map(([id,s])=>[id,Object.assign({},s,{plan:Object.assign({pressY:null,pressAnzeigen:true},s.plan||{})})]));
     return out;},
+  /* 16 → 17: neu und optional: Beobachtung.skizze (eigenes Spielfeld je Beobachtung). Alte Punkte haben keine – nichts zu ändern. */
+  16:d=>d,
 };
 /* Texte: Leerzeichen am Anfang/Ende entfernen – in allen Zeichenketten eines Datenobjekts. */
 function trimDeep(o){if(typeof o==="string")return o.trim();if(Array.isArray(o))return o.map(trimDeep);

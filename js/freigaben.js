@@ -61,7 +61,8 @@ async function zugLoeschen(pid){if(!confirmDel(`Zugang von ${pNameAlle(pid)} ent
 function inhaltAusSpiel(sid,q){
   const s=S.spiele[sid];if(!s)return null;const pids=q.punkte||[],mids=new Set(q.medien||[]);
   const punkte=(s.punkte||[]).filter(p=>pids.includes(p.id)).map(p=>{(p.medien||[]).forEach(m=>mids.add(m));
-    return {text:p.text||"",art:p.art||"info",hz:p.hz||1,haupt:p.haupt||"",tag:p.tag||"",teile:(p.teile||[]).slice(),medien:(p.medien||[]).slice()};});
+    return {text:p.text||"",art:p.art||"info",hz:p.hz||1,haupt:p.haupt||"",tag:p.tag||"",teile:(p.teile||[]).slice(),medien:(p.medien||[]).slice(),
+      skizze:typeof skizzeDa==="function"&&skizzeDa(p.skizze)?boardSVG(p.skizze,"fgp"+p.id):""};});
   const medien=(s.medien||[]).filter(m=>mids.has(m.id)).map(m=>m.typ==="bild"?{id:m.id,typ:"bild",titel:m.titel||"",data:m.data}:{id:m.id,typ:"video",titel:m.titel||"",url:m.url});
   return {spiel:{gegner:s.gegner||"",datum:s.datum||"",ergebnis:s.ergebnis||"",wettbewerb:s.wettbewerb||""},punkte,medien,fazit:q.fazit?(s.fazit||""):""};
 }
@@ -135,6 +136,7 @@ function fgInhaltHtml(i){
     :istLink(m.url)?`<a class="medvid" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">▶ ${esc(m.titel||"Clip öffnen")} ↗</a>`:"";};
   const pk=(i.punkte||[]).map(p=>`<div class="fgpkt"><span class="art sm" data-a="${p.art||"info"}" aria-label="${ARTN[p.art||"info"]}">${ARTL[p.art||"info"]}</span><div><div>${esc(p.text)}</div>
     ${[p.haupt,p.tag,...(p.teile||[])].filter(Boolean).length?`<span class="src">${esc([p.haupt,p.tag,...(p.teile||[])].filter(Boolean).join(" · "))}</span>`:""}
+    ${typeof p.skizze==="string"&&p.skizze.startsWith("<svg")?`<div class="tafelpub" style="margin-top:8px">${p.skizze}</div>`:""}
     ${(p.medien||[]).map(id=>med.get(id)).filter(Boolean).map(medHtml).join("")}</div></div>`).join("");
   const rest=(i.medien||[]).filter(m=>!gezeigt.has(m.id));
   return `${i.spiel&&(i.spiel.gegner||i.spiel.datum)?`<p class="legend" style="margin-top:0">Spiel gegen ${esc(i.spiel.gegner||"?")}${i.spiel.datum?", "+esc(fmtDate(i.spiel.datum)):""}${i.spiel.ergebnis?" · "+esc(i.spiel.ergebnis):""}</p>`:""}

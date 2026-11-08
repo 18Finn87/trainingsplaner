@@ -47,7 +47,11 @@ function backupReminder(){
 }
 function mountBoards(){
   document.querySelectorAll("[data-board]").forEach(el=>{
-    const [kind,id,field]=el.dataset.board.split(":");const o=objFor(kind,id);if(!o)return;
+    const [kind,id,field]=el.dataset.board.split(":");
+    if(kind==="spielpt"){   // Skizze einer einzelnen Beobachtung im Spielbericht
+      const s=S.spiele[id];const p=s&&(s.punkte||[]).find(x=>x.id===field);if(!p)return;
+      mountBoard(el,()=>{if(!p.skizze)p.skizze={field:"half",items:[],lines:[]};return p.skizze;},()=>saveLater("spiel",id));return;}
+    const o=objFor(kind,id);if(!o)return;
     mountBoard(el,()=>{if(!o[field])o[field]={field:kind==="spiel"?"full":"half",items:[],lines:[]};return o[field];},()=>saveLater(kind,id));
   });
 }
