@@ -38,10 +38,11 @@ function tafelAufstellung(s,f){
     b.items.push({k:"rot",x:+px.toFixed(2),y:+py.toFixed(2),n:String(i+1)});if(ids[i])b.namen["rot:"+(i+1)]=ids[i];});
 }
 function tafelLegende(s,f){
-  const b=s[f];const toks=(b&&b.items||[]).filter(it=>TAFEL_FARBEN[it.k]&&it.n);if(!toks.length)return "";const seen=new Set();
-  const reihe=Object.keys(TAFEL_FARBEN);const sort=toks.slice().sort((x,y)=>reihe.indexOf(x.k)-reihe.indexOf(y.k)||(parseInt(x.n,10)||0)-(parseInt(y.n,10)||0));
-  return `<p class="legend" style="margin:10px 0 4px">Wer ist wer? Der Name steht dann auf dem Feld unter der Nummer. (Blau = Gegner)</p><div class="tlgrid">${sort.filter(it=>{const k=it.k+":"+it.n;if(seen.has(k))return false;seen.add(k);return true;})
-    .map(it=>{const k=it.k+":"+it.n;return `<label class="tlrow"><span class="tdot ${it.k}">${esc(it.n)}</span>${spielerAuswahl(s,(b.namen||{})[k],`data-act="plTafelName" data-f="${f}" data-k="${esc(k)}" aria-label="${TAFEL_FARBEN[it.k]} ${esc(it.n)}"`)}</label>`;}).join("")}</div>`;
+  const std=f.startsWith("boardStd");const FARBEN=std?Object.assign({},TAFEL_FARBEN,{blau:"Blau"}):TAFEL_FARBEN;   // bei Standards auch Blau zuordnen
+  const b=s[f];const toks=(b&&b.items||[]).filter(it=>FARBEN[it.k]&&it.n);if(!toks.length)return "";const seen=new Set();
+  const reihe=Object.keys(FARBEN);const sort=toks.slice().sort((x,y)=>reihe.indexOf(x.k)-reihe.indexOf(y.k)||(parseInt(x.n,10)||0)-(parseInt(y.n,10)||0));
+  return `<p class="legend" style="margin:10px 0 4px">Wer ist wer? Der Name steht dann auf dem Feld unter der Nummer. ${std?"Tipp: Nummer auf dem Feld antippen und dort auswählen.":"(Blau = Gegner)"}</p><div class="tlgrid">${sort.filter(it=>{const k=it.k+":"+it.n;if(seen.has(k))return false;seen.add(k);return true;})
+    .map(it=>{const k=it.k+":"+it.n;return `<label class="tlrow"><span class="tdot ${it.k}">${esc(it.n)}</span>${spielerAuswahl(s,(b.namen||{})[k],`data-act="plTafelName" data-f="${f}" data-k="${esc(k)}" aria-label="${FARBEN[it.k]} ${esc(it.n)}"`)}</label>`;}).join("")}</div>`;
 }
 function tafelBlock(id,s,f,titel,hinweis){
   const offen=S.ui.open["d"+f+id]??!!(s[f]&&((s[f].items||[]).length||(s[f].lines||[]).length));

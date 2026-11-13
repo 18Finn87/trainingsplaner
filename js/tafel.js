@@ -73,7 +73,9 @@ const ICON={
 };
 const TOOLS=[["select","Bewegen"],["sep"],["blau","Blau"],["rot","Rot"],["gelb","Gelb"],["tw","TW"],["sep"],["ball","Ball"],["cone","Hütchen"],["mini","Minitor"],["goal","Tor"],["pole","Stange"],["sep"],["pass","Pass"],["run","Laufweg"],["dribble","Dribbling"],["sep"],["erase","Radierer"]];
 let boardSeq=0;const boardTools={};
-function mountBoard(el,getB,onChange){
+/* opt.spieler(wert,attrs): liefert ein Auswahlfeld mit dem Kader – dann kann man einer angetippten Nummer
+   direkt auf der Tafel eine Spielerin geben (b.namen {"blau:1": Kennung}); opt.onName: nach einer Auswahl */
+function mountBoard(el,getB,onChange,opt={}){
   const bkey=el.dataset.board;const pfx="b"+(++boardSeq);let tool=boardTools[bkey]||"select",sel=-1,selL=-1,drag=null,draft=null;
   el.innerHTML=`<div class="board"><div class="tools" role="toolbar" aria-label="Werkzeuge">${TOOLS.map(t=>t[0]==="sep"?'<span class="tsep"></span>':`<button type="button" class="tool" data-tool="${t[0]}" aria-pressed="${t[0]===tool}" aria-label="${t[1]}" title="${t[1]}">${ICON[t[0]]}<span class="tlabel">${t[1]}</span></button>`).join("")}
     <span class="tsep"></span><label class="tool">Feld <select data-field style="border:0;background:none"><option value="half">Halbes Feld</option><option value="strafraum">Strafraum (groß)</option><option value="full">Ganzes Feld</option><option value="free">Freie Fläche 40×30</option></select></label></div>
@@ -85,7 +87,8 @@ function mountBoard(el,getB,onChange){
   function drawSel(){
     const b=B();
     if(sel>=0&&b.items[sel]){const it=b.items[sel];const isP=["blau","rot","gelb","tw"].includes(it.k);const isG=["mini","goal"].includes(it.k);
-      selbar.innerHTML=`${isP?`<label>Beschriftung <input class="inp" data-lab maxlength="3" value="${esc(it.n||"")}"></label>`:""}${isG?'<button type="button" class="btn sm" data-rot>Drehen</button>':""}<button type="button" class="btn sm danger" data-del>Entfernen</button>`;}
+      const nk=it.k+":"+(it.n||"");const pick=isP&&it.n&&opt.spieler?`<label class="selname">Spielerin ${opt.spieler((b.namen||{})[nk],`data-pname aria-label="Spielerin für ${esc(it.n)}"`)}</label>`:"";
+      selbar.innerHTML=`${isP?`<label>Beschriftung <input class="inp" data-lab maxlength="3" value="${esc(it.n||"")}"></label>`:""}${pick}${isG?'<button type="button" class="btn sm" data-rot>Drehen</button>':""}<button type="button" class="btn sm danger" data-del>Entfernen</button>`;}
     else if(selL>=0&&b.lines[selL]) selbar.innerHTML=`<button type="button" class="btn sm" data-flip>Richtung umdrehen</button><button type="button" class="btn sm danger" data-del>Entfernen</button>`;
     else selbar.innerHTML=`<span><b>${esc((TOOLS.find(x=>x[0]===tool)||[])[1]||"")}:</b> ${tool==="select"?"Tippe auf ein Element, um es zu verschieben oder zu bearbeiten. Wischen übers leere Feld scrollt.":["pass","run","dribble"].includes(tool)?"Ziehe auf dem Feld, um den Pfeil zu zeichnen.":tool==="erase"?"Tippe auf ein Element, um es zu entfernen.":"Tippe aufs Feld, um es zu platzieren."}</span><span style="margin-left:auto"></span>${(b.items.length||b.lines.length)?'<button type="button" class="btn sm ghost" data-clear>Skizze leeren</button>':""}`;
   }
@@ -99,6 +102,9 @@ function mountBoard(el,getB,onChange){
     else if(e.target.closest("[data-flip]")){const l=b.lines[selL];[l.x1,l.y1,l.x2,l.y2]=[l.x2,l.y2,l.x1,l.y1];onChange();draw();}
     else if(e.target.closest("[data-clear]")){b.items=[];b.lines=[];onChange();draw();}});
   selbar.addEventListener("input",e=>{if(e.target.matches("[data-lab]")){B().items[sel].n=e.target.value;stage.innerHTML=boardSVG(B(),pfx,sel,selL,null);onChange();}});
+  selbar.addEventListener("change",e=>{if(!e.target.matches("[data-pname]"))return;const b=B(),it=b.items[sel];if(!it)return;const k=it.k+":"+(it.n||"");
+    b.namen=Object.assign({},b.namen);if(e.target.value)b.namen[k]=e.target.value;else delete b.namen[k];
+    stage.innerHTML=boardSVG(b,pfx,sel,selL,null);onChange();if(opt.onName)opt.onName();});
   /* Touch: Die Tafel wird beim Ziehen ständig neu gezeichnet. Deshalb hält die Bühne (stage) den Finger fest,
      nicht das SVG – sonst verliert das Handy den Finger, sobald das alte SVG ersetzt wird.
      Im Modus „Bewegen“ scrollt ein Wischen übers leere Feld die Seite; sonst bleibt die Seite stehen. */

@@ -753,5 +753,5 @@ body.sp-modus #tabs,body.sp-modus #teamSel,body.sp-modus #gearBtn,body.sp-modus 
 .tlrow{display:flex;align-items:center;gap:8px}
 .tlrow select{flex:1;min-width:0}
 .tdot{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:700 13px var(--head);color:#fff;border:2px solid #fff}
-.tdot.rot{background:#C23B3B}.tdot.gelb{background:#E2B42A;color:#1C2520}.tdot.tw{background:#20262A}
+.tdot.rot{background:#C23B3B}.tdot.blau{background:#2F6FA3}.tdot.gelb{background:#E2B42A;color:#1C2520}.tdot.tw{background:#20262A}
 .tafelpub svg{width:100%;max-width:520px;height:auto;display:block;margin:6px auto;border-radius:10px}
